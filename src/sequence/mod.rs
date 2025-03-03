@@ -15,7 +15,7 @@ use crate::{And, Check, OutputM, OutputMode, PResult};
 /// * `second` The second parser to apply.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// use nom::sequence::pair;
 /// use nom::bytes::complete::tag;
 /// use nom::{error::ErrorKind, Err, Parser};
@@ -27,10 +27,7 @@ use crate::{And, Check, OutputM, OutputMode, PResult};
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn pair<I, O1, O2, E: ParseError<I>, F, G>(
-  first: F,
-  second: G,
-) -> And<F, G>
+pub fn pair<I, O1, O2, E: ParseError<I>, F, G>(first: F, second: G) -> And<F, G>
 where
   F: Parser<I, Output = O1, Error = E>,
   G: Parser<I, Output = O2, Error = E>,
@@ -46,7 +43,7 @@ where
 /// * `second` The second parser to get an object.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::sequence::preceded;
@@ -59,10 +56,7 @@ where
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn preceded<I, O, E: ParseError<I>, F, G>(
-  first: F,
-  second: G,
-) -> Preceded<F, G>
+pub fn preceded<I, O, E: ParseError<I>, F, G>(first: F, second: G) -> Preceded<F, G>
 where
   F: Parser<I, Error = E>,
   G: Parser<I, Output = O, Error = E>,
@@ -104,7 +98,7 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
 /// * `second` The second parser to match an object.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::sequence::terminated;
@@ -117,10 +111,7 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn terminated<I, O, E: ParseError<I>, F, G>(
-  first: F,
-  second: G,
-) -> Terminated<F, G>
+pub fn terminated<I, O, E: ParseError<I>, F, G>(first: F, second: G) -> Terminated<F, G>
 where
   F: Parser<I, Output = O, Error = E>,
   G: Parser<I, Error = E>,
@@ -164,7 +155,7 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
 /// * `second` The second parser to apply.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::sequence::separated_pair;
@@ -200,7 +191,7 @@ where
 /// * `third` The third parser to apply and discard.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::sequence::delimited;
@@ -307,9 +298,9 @@ impl<I, E: ParseError<I>> Tuple<I, (), E> for () {
 
 ///Applies a tuple of parsers one by one and returns their results as a tuple.
 ///There is a maximum of 21 parsers
-/// 
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind};
 /// use nom::sequence::tuple;
 /// use nom::character::complete::{alpha1, digit1};

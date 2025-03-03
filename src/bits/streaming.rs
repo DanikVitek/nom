@@ -82,7 +82,7 @@ where
 /// Parses one specific bit as a bool.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::bits::complete::bool;
 /// # use nom::IResult;
 /// # use nom::error::{Error, ErrorKind};

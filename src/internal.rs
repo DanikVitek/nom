@@ -1,32 +1,34 @@
 //! Basic types to build the parsers
 
-use self::Needed::*;
 use crate::error::{self, ErrorKind, FromExternalError, ParseError};
-use crate::lib::std::fmt;
+use core::fmt;
 use core::marker::PhantomData;
 use core::num::NonZeroUsize;
 
 /// Holds the result of parsing functions
 ///
-/// It depends on the input type `I`, the output type `O`, and the error type `E`
+/// It depends on the input type [`I`], the output type [`O`], and the error type [`E`]
 /// (by default `(I, nom::ErrorKind)`)
 ///
-/// The `Ok` side is a pair containing the remainder of the input (the part of the data that
-/// was not parsed) and the produced value. The `Err` side contains an instance of `nom::Err`.
+/// The [`IResult::Ok`] variant is a pair containing the remainder of the input (the part of the data that
+/// was not parsed) and the produced value.
 ///
-/// Outside of the parsing code, you can use the [Finish::finish] method to convert
+/// The [`IResult::Err`] variant contains an instance of [`nom::Err`](crate::Err).
+///
+/// Outside the parsing code, you can use the [`Finish::finish`] method to convert
 /// it to a more common result type
 pub type IResult<I, O, E = error::Error<I>> = Result<(I, O), Err<E>>;
 
 /// Helper trait to convert a parser's result to a more manageable type
 pub trait Finish<I, O, E> {
-  /// converts the parser's result to a type that is more consumable by error
-  /// management libraries. It keeps the same `Ok` branch, and merges `Err::Error`
-  /// and `Err::Failure` into the `Err` side.
+  /// Converts the parser's result to a type that is more consumable by error
+  /// management libraries.
+  /// It keeps the same [`Ok`] branch, and merges [`Err::Error`]
+  /// and [`Err::Failure`] into the [`Result::Err`] variant.
   ///
-  /// *warning*: if the result is `Err(Err::Incomplete(_))`, this method will panic.
-  /// - "complete" parsers: It will not be an issue, `Incomplete` is never used
-  /// - "streaming" parsers: `Incomplete` will be returned if there's not enough data
+  /// *Warning*: if the result is `Err(Err::Incomplete(_))`, this method will panic.
+  /// - "complete" parsers: It will not be an issue, [`Err::Incomplete`] is never used
+  /// - "streaming" parsers: [`Err::Incomplete`] will be returned if there's not enough data
   ///   for the parser to decide, and you should gather more data before parsing again.
   ///   Once the parser returns either `Ok(_)`, `Err(Err::Error(_))` or `Err(Err::Failure(_))`,
   ///   you can get out of the parsing loop and call `finish()` on the parser's result
@@ -39,7 +41,11 @@ impl<I, O, E> Finish<I, O, E> for IResult<I, O, E> {
       Ok(res) => Ok(res),
       Err(Err::Error(e)) | Err(Err::Failure(e)) => Err(e),
       Err(Err::Incomplete(_)) => {
-        panic!("Cannot call `finish()` on `Err(Err::Incomplete(_))`: this result means that the parser does not have enough data to decide, you should gather more data and try to reapply the parser instead")
+        panic!(
+          "Cannot call `finish()` on `Err(Err::Incomplete(_))`: \
+           this result means that the parser does not have enough data to decide, \
+           you should gather more data and try to reapply the parser instead"
+        )
       }
     }
   }
@@ -55,7 +61,7 @@ pub enum Needed {
 }
 
 impl Needed {
-  /// Creates `Needed` instance, returns `Needed::Unknown` if the argument is zero
+  /// Creates [`Needed`] instance, returns [`Needed::Unknown`] if the argument is zero
   pub fn new(s: usize) -> Self {
     match NonZeroUsize::new(s) {
       Some(sz) => Needed::Size(sz),
@@ -65,15 +71,15 @@ impl Needed {
 
   /// Indicates if we know how many bytes we need
   pub fn is_known(&self) -> bool {
-    *self != Unknown
+    !matches!(*self, Needed::Unknown)
   }
 
-  /// Maps a `Needed` to `Needed` by applying a function to a contained `Size` value.
+  /// Maps a [`Needed`] to [`Needed`] by applying a function to a contained [`Needed::Size`] value.
   #[inline]
   pub fn map<F: Fn(NonZeroUsize) -> usize>(self, f: F) -> Needed {
     match self {
-      Unknown => Unknown,
-      Size(n) => Needed::new(f(n)),
+      Needed::Unknown => Needed::Unknown,
+      Needed::Size(n) => Needed::new(f(n)),
     }
   }
 }
@@ -81,22 +87,21 @@ impl Needed {
 /// The `Err` enum indicates the parser was not successful
 ///
 /// It has three cases:
+/// * [`Incomplete`](Err::Incomplete) variant indicates that more data is needed to decide.
+//    The [`Needed`] enum can contain how many additional bytes are necessary.
+//    If you are sure your parser is working on full data,
+//    you can wrap your parser with the [`complete`](crate::combinator::complete) combinator
+//    to transform that case in [`Error`].
+/// * [`Error`](Err::Error) variant means some parser did not succeed, but another one might
+///   (as an example, when testing different branches of an [`alt`](crate::branch::alt) combinator)
+/// * [`Failure`](Err::Failure) variant indicates an unrecoverable error.
+///   For example, when a prefix has been recognized and the next parser has been confirmed,
+///   if that parser fails, then the entire process fails; there are no more parsers to try.
 ///
-/// * `Incomplete` indicates that more data is needed to decide. The `Needed` enum
-///   can contain how many additional bytes are necessary. If you are sure your parser
-///   is working on full data, you can wrap your parser with the `complete` combinator
-///   to transform that case in `Error`
-/// * `Error` means some parser did not succeed, but another one might (as an example,
-///   when testing different branches of an `alt` combinator)
-/// * `Failure` indicates an unrecoverable error. For example, when a prefix has been
-///   recognised and the next parser has been confirmed, if that parser fails, then the
-///   entire process fails; there are no more parsers to try.
-///
-/// Distinguishing `Failure` this from `Error` is only relevant inside the parser's code. For
-/// external consumers, both mean that parsing failed.
+/// Distinguishing [`Failure`] from [`Error`] is only relevant inside the parser's code.
+/// For external consumers, both mean that parsing failed.
 ///
 /// See also: [`Finish`].
-///
 #[derive(Debug, Clone, PartialEq)]
 pub enum Err<Failure, Error = Failure> {
   /// There was not enough data
@@ -104,7 +109,7 @@ pub enum Err<Failure, Error = Failure> {
   /// The parser had an error (recoverable)
   Error(Error),
   /// The parser had an unrecoverable error: we got to the right
-  /// branch and we know other branches won't work, so backtrack
+  /// branch, and we know other branches won't work, so backtrack
   /// as fast as possible
   Failure(Failure),
 }
@@ -132,7 +137,7 @@ impl<E> Err<E> {
   where
     E: From<F>,
   {
-    e.map(crate::lib::std::convert::Into::into)
+    e.map(core::convert::Into::into)
   }
 }
 
@@ -151,7 +156,7 @@ impl<T> Err<(T, ErrorKind)> {
 }
 
 impl<T> Err<error::Error<T>> {
-  /// Maps `Err<error::Error<T>>` to `Err<error::Error<U>>` with the given `F: T -> U`
+  /// Maps `Err<error::Error<T>>` to `Err<error::Error<U>>` with the given [`F: T -> U`](F)
   pub fn map_input<U, F>(self, f: F) -> Err<error::Error<U>>
   where
     F: FnOnce(T) -> U,
@@ -239,12 +244,12 @@ where
 
 /// Parser mode: influences how combinators build values
 ///
-/// the [Parser] trait is generic over types implementing [Mode]. Its method are
-/// called to produce and manipulate output values or errors.
+/// The [`Parser`] trait is generic over types implementing [`Mode`].
+/// Its methods are called to produce and manipulate output values or errors.
 ///
 /// The main implementations of this trait are:
-/// * [Emit]: produce a value
-/// * [Check]: apply the parser but do not generate a value
+/// * [`Emit`]: produce a value
+/// * [`Check`]: apply the parser but do not generate a value
 pub trait Mode {
   /// The output type that may be generated
   type Output<T>;
@@ -263,7 +268,7 @@ pub trait Mode {
   ) -> Self::Output<V>;
 }
 
-/// Produces a value. This is the default behaviour for parsers
+/// Produces a value. This is the default behavior for parsers
 pub struct Emit;
 impl Mode for Emit {
   type Output<T> = T;
@@ -292,7 +297,7 @@ impl Mode for Emit {
 ///
 /// This has the effect of greatly reducing the amount of code generated and the
 /// parser memory usage. Some combinators check for an error in a child parser but
-/// discard the error, and for those, using [Check] makes sure the error is not
+/// discard the error, and for those, using `Check` makes sure the error is not
 /// even generated, only the fact that an error happened remains
 pub struct Check;
 impl Mode for Check {
@@ -315,11 +320,11 @@ impl Mode for Check {
 
 /// Parser result type
 ///
-/// * `Ok` branch: a tuple of the remaining input data, and the output value.
-///   The output value is of the `O` type if the output mode was [Emit], and `()`
-///   if the mode was [Check]
-/// * `Err` branch: an error of the `E` type if the erroor mode was [Emit], and `()`
-///   if the mode was [Check]
+/// * [`Ok`](PResult::Ok) variant: a tuple of the remaining input data, and the output value.
+///   The output value is of the [`O`] type if the output mode was [`Emit`], and `()`
+///   if the mode was [`Check`]
+/// * [`Err`](PResult::Err) variant: an error of the [`E`] type if the error mode was [`Emit`], and `()`
+///   if the mode was [`Check`]
 pub type PResult<OM, I, O, E> = Result<
   (I, <<OM as OutputMode>::Output as Mode>::Output<O>),
   Err<E, <<OM as OutputMode>::Error as Mode>::Output<E>>,
@@ -327,28 +332,35 @@ pub type PResult<OM, I, O, E> = Result<
 
 /// Trait Defining the parser's execution
 ///
-/// The same parser implementation can vary in behaviour according to the chosen
+/// The same parser implementation can vary in behavior according to the chosen
 /// output mode
 pub trait OutputMode {
-  /// Defines the [Mode] for the output type. [Emit] will generate the value, [Check] will
-  /// apply the parser but will only generate `()` if successful. This can be used when
-  /// verifying that the input data conforms to the format without having to generate any
-  /// output data
+  /// Defines the [`Mode`] for the output type.
+  ///
+  /// [`Emit`] will generate the value, [`Check`] will apply the parser but will only generate `()`
+  /// if successful.
+  ///
+  /// This can be used when verifying that the input data conforms to the format
+  /// without having to generate any output data
   type Output: Mode;
-  /// Defines the [Mode] for the output type. [Emit] will generate the value, [Check] will
-  /// apply the parser but will only generate `()` if an error happened. [Emit] should be
-  /// used when we want to handle the error and extract useful information from it. [Check]
-  /// is used when we just want to know if parsing failed and reject the data quickly.
+  /// Defines the [`Mode`] for the output type.
+  ///
+  /// [`Emit`] will generate the value, [`Check`] will apply the parser but will only generate `()`
+  /// if an error happened.
+  ///
+  /// [`Emit`] should be used when we want to handle the error and extract useful information from it.
+  ///
+  /// [`Check`] is used when we just want to know if parsing failed and reject the data quickly.
   type Error: Mode;
-  /// Indicates whether the input data is "complete", ie we already have the entire data in the
+  /// Indicates whether the input data is "complete", i.e., we already have the entire data in the
   /// buffer, or if it is "streaming", where more data can be added later in the buffer. In
   /// streaming mode, the parser will understand that a failure may mean that we are missing
-  /// data, and will return a specific error branch, [Err::Incomplete] to signal it. In complete
+  /// data, and will return a specific error branch, [`Err::Incomplete`] to signal it. In complete
   /// mode, the parser will generate a normal error
   type Incomplete: IsStreaming;
 }
 
-/// Specifies the behaviour when a parser encounters an error that could be due to partial ata
+/// Specifies the behavior when a parser encounters an error that could be due to partial ata
 pub trait IsStreaming {
   /// called by parsers on partial data errors
   /// * `needed` can hold the amount of additional data the parser would need to decide
@@ -386,8 +398,8 @@ impl IsStreaming for Complete {
   }
 }
 
-/// Holds the parser execution modifiers: output [Mode], error [Mode] and
-/// streaming behaviour for input data
+/// Holds the parser execution modifiers: output [`Mode`], error [`Mode`] and
+/// streaming behavior for input data
 pub struct OutputM<M: Mode, EM: Mode, S: IsStreaming> {
   m: PhantomData<M>,
   em: PhantomData<EM>,
@@ -399,6 +411,7 @@ impl<M: Mode, EM: Mode, S: IsStreaming> OutputMode for OutputM<M, EM, S> {
   type Error = EM;
   type Incomplete = S;
 }
+
 /// All nom parsers implement this trait
 pub trait Parser<Input> {
   /// Type of the produced value

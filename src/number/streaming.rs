@@ -1,19 +1,22 @@
 //! Parsers recognizing numbers, streaming version
 
-use crate::branch::alt;
-use crate::bytes::streaming::tag;
-use crate::character::streaming::{char, digit1, sign};
-use crate::combinator::{cut, map, opt, recognize};
-use crate::error::{ErrorKind, ParseError};
-use crate::lib::std::ops::{Add, Shl};
-use crate::sequence::pair;
-use crate::traits::{AsBytes, AsChar, Compare, Offset};
-use crate::{internal::*, Input};
+use core::ops::{Add, BitAnd, BitOrAssign, Not, Shl};
 
-/// Recognizes an unsigned 1 byte integer.
+use crate::{
+  branch::alt,
+  bytes::streaming::tag,
+  character::streaming::sign,
+  combinator::{cut, opt},
+  error::{ErrorKind, ParseError},
+  internal::*,
+  traits::{AsBytes, AsChar, Compare, Offset},
+  HasUintCounterpart, Input,
+};
+
+/// Recognizes an unsigned 1-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_u8;
 ///
@@ -36,7 +39,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_u16;
 ///
@@ -59,7 +62,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_u24;
 ///
@@ -82,7 +85,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_u32;
 ///
@@ -105,7 +108,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_u64;
 ///
@@ -124,10 +127,10 @@ where
   be_uint(input, 8)
 }
 
-/// Recognizes a big endian unsigned 16 bytes integer.
+/// Recognizes a big endian unsigned 16-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_u128;
 ///
@@ -155,10 +158,10 @@ where
   super::be_uint(bound).parse(input)
 }
 
-/// Recognizes a signed 1 byte integer.
+/// Recognizes a signed 1-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_i8;
 ///
@@ -172,13 +175,13 @@ pub fn be_i8<I, E: ParseError<I>>(input: I) -> IResult<I, i8, E>
 where
   I: Input<Item = u8>,
 {
-  be_u8.map(|x| x as i8).parse(input)
+  be_int(input, 1)
 }
 
-/// Recognizes a big endian signed 2 bytes integer.
+/// Recognizes a big endian signed 2-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_i16;
 ///
@@ -192,13 +195,13 @@ pub fn be_i16<I, E: ParseError<I>>(input: I) -> IResult<I, i16, E>
 where
   I: Input<Item = u8>,
 {
-  be_u16.map(|x| x as i16).parse(input)
+  be_int(input, 2)
 }
 
-/// Recognizes a big endian signed 3 bytes integer.
+/// Recognizes a big endian signed 3-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_i24;
 ///
@@ -212,22 +215,13 @@ pub fn be_i24<I, E: ParseError<I>>(input: I) -> IResult<I, i32, E>
 where
   I: Input<Item = u8>,
 {
-  // Same as the unsigned version but we need to sign-extend manually here
-  be_u24
-    .map(|x| {
-      if x & 0x80_00_00 != 0 {
-        (x | 0xff_00_00_00) as i32
-      } else {
-        x as i32
-      }
-    })
-    .parse(input)
+  be_int(input, 3)
 }
 
-/// Recognizes a big endian signed 4 bytes integer.
+/// Recognizes a big endian signed 4-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_i32;
 ///
@@ -241,14 +235,14 @@ pub fn be_i32<I, E: ParseError<I>>(input: I) -> IResult<I, i32, E>
 where
   I: Input<Item = u8>,
 {
-  be_u32.map(|x| x as i32).parse(input)
+  be_int(input, 4)
 }
 
-/// Recognizes a big endian signed 8 bytes integer.
+/// Recognizes a big endian signed 8-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_i64;
 ///
@@ -262,13 +256,13 @@ pub fn be_i64<I, E: ParseError<I>>(input: I) -> IResult<I, i64, E>
 where
   I: Input<Item = u8>,
 {
-  be_u64.map(|x| x as i64).parse(input)
+  be_int(input, 8)
 }
 
-/// Recognizes a big endian signed 16 bytes integer.
+/// Recognizes a big endian signed 16-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_i128;
 ///
@@ -282,13 +276,31 @@ pub fn be_i128<I, E: ParseError<I>>(input: I) -> IResult<I, i128, E>
 where
   I: Input<Item = u8>,
 {
-  be_u128.map(|x| x as i128).parse(input)
+  be_int(input, 16)
 }
 
-/// Recognizes an unsigned 1 byte integer.
+#[inline]
+fn be_int<I, Int, E: ParseError<I>>(input: I, bound: usize) -> IResult<I, Int, E>
+where
+  I: Input<Item = u8>,
+  Int: HasUintCounterpart,
+  Int::Uint: Default
+    + Shl<u8, Output = Int::Uint>
+    + Add<Output = Int::Uint>
+    + BitAnd<Output = Int::Uint>
+    + BitOrAssign
+    + Not<Output = Int::Uint>
+    + PartialEq
+    + From<u8>
+    + Clone,
+{
+  super::be_int(bound).parse(input)
+}
+
+/// Recognizes an unsigned 1-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_u8;
 ///
@@ -305,11 +317,11 @@ where
   le_uint(input, 1)
 }
 
-/// Recognizes a little endian unsigned 2 bytes integer.
+/// Recognizes a little endian unsigned 2-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_u16;
 ///
@@ -328,11 +340,11 @@ where
   le_uint(input, 2)
 }
 
-/// Recognizes a little endian unsigned 3 bytes integer.
+/// Recognizes a little endian unsigned 3-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_u24;
 ///
@@ -351,11 +363,11 @@ where
   le_uint(input, 3)
 }
 
-/// Recognizes a little endian unsigned 4 bytes integer.
+/// Recognizes a little endian unsigned 4-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_u32;
 ///
@@ -374,11 +386,11 @@ where
   le_uint(input, 4)
 }
 
-/// Recognizes a little endian unsigned 8 bytes integer.
+/// Recognizes a little endian unsigned 8-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_u64;
 ///
@@ -397,11 +409,11 @@ where
   le_uint(input, 8)
 }
 
-/// Recognizes a little endian unsigned 16 bytes integer.
+/// Recognizes a little endian unsigned 16-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_u128;
 ///
@@ -429,10 +441,10 @@ where
   super::le_uint(bound).parse(input)
 }
 
-/// Recognizes a signed 1 byte integer.
+/// Recognizes a signed 1-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_i8;
 ///
@@ -446,14 +458,14 @@ pub fn le_i8<I, E: ParseError<I>>(input: I) -> IResult<I, i8, E>
 where
   I: Input<Item = u8>,
 {
-  le_u8.map(|x| x as i8).parse(input)
+  le_int(input, 1)
 }
 
-/// Recognizes a little endian signed 2 bytes integer.
+/// Recognizes a little endian signed 2-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_i16;
 ///
@@ -469,14 +481,14 @@ pub fn le_i16<I, E: ParseError<I>>(input: I) -> IResult<I, i16, E>
 where
   I: Input<Item = u8>,
 {
-  le_u16.map(|x| x as i16).parse(input)
+  le_int(input, 2)
 }
 
-/// Recognizes a little endian signed 3 bytes integer.
+/// Recognizes a little endian signed 3-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_i24;
 ///
@@ -492,23 +504,14 @@ pub fn le_i24<I, E: ParseError<I>>(input: I) -> IResult<I, i32, E>
 where
   I: Input<Item = u8>,
 {
-  // Same as the unsigned version but we need to sign-extend manually here
-  le_u24
-    .map(|x| {
-      if x & 0x80_00_00 != 0 {
-        (x | 0xff_00_00_00) as i32
-      } else {
-        x as i32
-      }
-    })
-    .parse(input)
+  le_int(input, 3)
 }
 
-/// Recognizes a little endian signed 4 bytes integer.
+/// Recognizes a little endian signed 4-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_i32;
 ///
@@ -524,14 +527,14 @@ pub fn le_i32<I, E: ParseError<I>>(input: I) -> IResult<I, i32, E>
 where
   I: Input<Item = u8>,
 {
-  le_u32.map(|x| x as i32).parse(input)
+  le_int(input, 4)
 }
 
-/// Recognizes a little endian signed 8 bytes integer.
+/// Recognizes a little endian signed 8-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_i64;
 ///
@@ -547,14 +550,14 @@ pub fn le_i64<I, E: ParseError<I>>(input: I) -> IResult<I, i64, E>
 where
   I: Input<Item = u8>,
 {
-  le_u64.map(|x| x as i64).parse(input)
+  le_int(input, 8)
 }
 
-/// Recognizes a little endian signed 16 bytes integer.
+/// Recognizes a little endian signed 16-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_i128;
 ///
@@ -570,14 +573,32 @@ pub fn le_i128<I, E: ParseError<I>>(input: I) -> IResult<I, i128, E>
 where
   I: Input<Item = u8>,
 {
-  le_u128.map(|x| x as i128).parse(input)
+  le_int(input, 16)
 }
 
-/// Recognizes an unsigned 1 byte integer
+#[inline]
+fn le_int<I, Int, E: ParseError<I>>(input: I, bound: usize) -> IResult<I, Int, E>
+where
+  I: Input<Item = u8>,
+  Int: HasUintCounterpart,
+  Int::Uint: Default
+    + Shl<u8, Output = Int::Uint>
+    + Add<Output = Int::Uint>
+    + Not<Output = Int::Uint>
+    + BitAnd<Output = Int::Uint>
+    + BitOrAssign
+    + PartialEq
+    + From<u8>
+    + Clone,
+{
+  super::le_int(bound).parse(input)
+}
+
+/// Recognizes an unsigned 1-byte integer
 ///
 /// Note that endianness does not apply to 1 byte numbers.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::u8;
@@ -597,13 +618,13 @@ where
   super::u8().parse(input)
 }
 
-/// Recognizes an unsigned 2 bytes integer
+/// Recognizes an unsigned 2-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian u16 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian u16 integer.
+/// If the parameter is [`Endianness::Big`, parse a big endian u16 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian u16 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::u16;
@@ -632,12 +653,12 @@ where
   move |input| super::u16(endian).parse(input)
 }
 
-/// Recognizes an unsigned 3 byte integer
+/// Recognizes an unsigned 3-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian u24 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian u24 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian u24 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian u24 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::u24;
@@ -666,12 +687,12 @@ where
   move |input| super::u24(endian).parse(input)
 }
 
-/// Recognizes an unsigned 4 byte integer
+/// Recognizes an unsigned 4-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian u32 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian u32 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian u32 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian u32 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::u32;
@@ -700,12 +721,12 @@ where
   move |input| super::u32(endian).parse(input)
 }
 
-/// Recognizes an unsigned 8 byte integer
+/// Recognizes an unsigned 8-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian u64 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian u64 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian u64 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian u64 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::u64;
@@ -734,12 +755,12 @@ where
   move |input| super::u64(endian).parse(input)
 }
 
-/// Recognizes an unsigned 16 byte integer
+/// Recognizes an unsigned 16-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian u128 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian u128 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian u128 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian u128 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::u128;
@@ -768,11 +789,11 @@ where
   move |input| super::u128(endian).parse(input)
 }
 
-/// Recognizes a signed 1 byte integer
+/// Recognizes a signed 1-byte integer
 ///
 /// Note that endianness does not apply to 1 byte numbers.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::i8;
@@ -792,12 +813,12 @@ where
   super::u8().map(|x| x as i8).parse(i)
 }
 
-/// Recognizes a signed 2 byte integer
+/// Recognizes a signed 2-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian i16 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian i16 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian i16 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian i16 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::i16;
@@ -826,12 +847,12 @@ where
   move |input| super::i16(endian).parse(input)
 }
 
-/// Recognizes a signed 3 byte integer
+/// Recognizes a signed 3-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian i24 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian i24 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian i24 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian i24 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::i24;
@@ -860,12 +881,12 @@ where
   move |input| super::i24(endian).parse(input)
 }
 
-/// Recognizes a signed 4 byte integer
+/// Recognizes a signed 4-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian i32 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian i32 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian i32 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian i32 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::i32;
@@ -894,12 +915,12 @@ where
   move |input| super::i32(endian).parse(input)
 }
 
-/// Recognizes a signed 8 byte integer
+/// Recognizes a signed 8-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian i64 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian i64 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian i64 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian i64 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::i64;
@@ -928,12 +949,12 @@ where
   move |input| super::i64(endian).parse(input)
 }
 
-/// Recognizes a signed 16 byte integer
+/// Recognizes a signed 16-byte integer
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian i128 integer,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian i128 integer.
+/// If the parameter is [`Endianness::Big`], parse a big endian i128 integer,
+/// otherwise if [`Endianness::Little`] parse a little endian i128 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::i128;
@@ -962,10 +983,10 @@ where
   move |input| super::i128(endian).parse(input)
 }
 
-/// Recognizes a big endian 4 bytes floating point number.
+/// Recognizes a big endian 4-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_f32;
 ///
@@ -981,16 +1002,13 @@ pub fn be_f32<I, E: ParseError<I>>(input: I) -> IResult<I, f32, E>
 where
   I: Input<Item = u8>,
 {
-  match be_u32(input) {
-    Err(e) => Err(e),
-    Ok((i, o)) => Ok((i, f32::from_bits(o))),
-  }
+  super::be_f32().parse(input)
 }
 
-/// Recognizes a big endian 8 bytes floating point number.
+/// Recognizes a big endian 8-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::be_f64;
 ///
@@ -1006,16 +1024,13 @@ pub fn be_f64<I, E: ParseError<I>>(input: I) -> IResult<I, f64, E>
 where
   I: Input<Item = u8>,
 {
-  match be_u64(input) {
-    Err(e) => Err(e),
-    Ok((i, o)) => Ok((i, f64::from_bits(o))),
-  }
+  super::be_f64().parse(input)
 }
 
-/// Recognizes a little endian 4 bytes floating point number.
+/// Recognizes a little endian 4-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_f32;
 ///
@@ -1031,16 +1046,13 @@ pub fn le_f32<I, E: ParseError<I>>(input: I) -> IResult<I, f32, E>
 where
   I: Input<Item = u8>,
 {
-  match le_u32(input) {
-    Err(e) => Err(e),
-    Ok((i, o)) => Ok((i, f32::from_bits(o))),
-  }
+  super::le_f32().parse(input)
 }
 
-/// Recognizes a little endian 8 bytes floating point number.
+/// Recognizes a little endian 8-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::le_f64;
 ///
@@ -1056,18 +1068,15 @@ pub fn le_f64<I, E: ParseError<I>>(input: I) -> IResult<I, f64, E>
 where
   I: Input<Item = u8>,
 {
-  match le_u64(input) {
-    Err(e) => Err(e),
-    Ok((i, o)) => Ok((i, f64::from_bits(o))),
-  }
+  super::le_f64().parse(input)
 }
 
-/// Recognizes a 4 byte floating point number
+/// Recognizes a 4-byte floating point number
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian f32 float,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian f32 float.
+/// If the parameter is [`Endianness::Big`], parse a big endian f32 float,
+/// otherwise if [`Endianness::Little`] parse a little endian f32 float.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::f32;
@@ -1101,12 +1110,12 @@ where
   }
 }
 
-/// Recognizes an 8 byte floating point number
+/// Recognizes an 8-byte floating point number
 ///
-/// If the parameter is `nom::number::Endianness::Big`, parse a big endian f64 float,
-/// otherwise if `nom::number::Endianness::Little` parse a little endian f64 float.
+/// If the parameter is [`Endianness::Big`], parse a big endian f64 float,
+/// otherwise if [`Endianness::Little`] parse a little endian f64 float.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::streaming::f64;
@@ -1143,7 +1152,7 @@ where
 /// Recognizes a hex-encoded integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::hex_u32;
 ///
@@ -1195,7 +1204,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if it reaches the end of input.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// use nom::number::streaming::recognize_float;
 ///
@@ -1215,18 +1224,7 @@ where
   T: Input,
   <T as Input>::Item: AsChar,
 {
-  recognize((
-      opt(alt((char('+'), char('-')))),
-      alt((
-        map((digit1, opt(pair(char('.'), opt(digit1)))), |_| ()),
-        map((char('.'), digit1), |_| ())
-      )),
-      opt((
-        alt((char('e'), char('E'))),
-        opt(alt((char('+'), char('-')))),
-        cut(digit1)
-      ))
-  )).parse(input)
+  super::recognize_float().parse(input)
 }
 
 // workaround until issues with minimal-lexical are fixed
@@ -1240,22 +1238,22 @@ where
   alt((
     |i: T| {
       recognize_float::<_, E>(i.clone()).map_err(|e| match e {
-        crate::Err::Error(_) => crate::Err::Error(E::from_error_kind(i, ErrorKind::Float)),
-        crate::Err::Failure(_) => crate::Err::Failure(E::from_error_kind(i, ErrorKind::Float)),
-        crate::Err::Incomplete(needed) => crate::Err::Incomplete(needed),
+        Err::Error(_) => Err::Error(E::from_error_kind(i, ErrorKind::Float)),
+        Err::Failure(_) => Err::Failure(E::from_error_kind(i, ErrorKind::Float)),
+        Err::Incomplete(needed) => Err::Incomplete(needed),
       })
     },
     |i: T| {
       crate::bytes::streaming::tag_no_case::<_, _, E>("nan")(i.clone())
-        .map_err(|_| crate::Err::Error(E::from_error_kind(i, ErrorKind::Float)))
+        .map_err(|_| Err::Error(E::from_error_kind(i, ErrorKind::Float)))
     },
     |i: T| {
       crate::bytes::streaming::tag_no_case::<_, _, E>("infinity")(i.clone())
-        .map_err(|_| crate::Err::Error(E::from_error_kind(i, ErrorKind::Float)))
+        .map_err(|_| Err::Error(E::from_error_kind(i, ErrorKind::Float)))
     },
     |i: T| {
       crate::bytes::streaming::tag_no_case::<_, _, E>("inf")(i.clone())
-        .map_err(|_| crate::Err::Error(E::from_error_kind(i, ErrorKind::Float)))
+        .map_err(|_| Err::Error(E::from_error_kind(i, ErrorKind::Float)))
     },
   ))
   .parse(input)
@@ -1360,7 +1358,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::complete::float;
@@ -1399,10 +1397,7 @@ where
   let (i, s) = recognize_float_or_exceptions(input)?;
   match s.parse_to() {
     Some(f) => Ok((i, f)),
-    None => Err(crate::Err::Error(E::from_error_kind(
-      i,
-      crate::error::ErrorKind::Float,
-    ))),
+    None => Err(Err::Error(E::from_error_kind(i, ErrorKind::Float))),
   }
 }
 
@@ -1410,7 +1405,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::Needed::Size;
 /// use nom::number::complete::double;
@@ -1449,17 +1444,13 @@ where
   let (i, s) = recognize_float_or_exceptions(input)?;
   match s.parse_to() {
     Some(f) => Ok((i, f)),
-    None => Err(crate::Err::Error(E::from_error_kind(
-      i,
-      crate::error::ErrorKind::Float,
-    ))),
+    None => Err(Err::Error(E::from_error_kind(i, ErrorKind::Float))),
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::error::ErrorKind;
   use crate::internal::{Err, Needed};
   use proptest::prelude::*;
 

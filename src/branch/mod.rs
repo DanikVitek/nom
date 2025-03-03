@@ -15,7 +15,8 @@ use crate::internal::{Err, Mode, Parser};
 /// tuple, there is a maximum of 21 parsers. If you need more, it is possible to
 /// use an array.
 ///
-/// ```rust
+/// # Example
+/// ```
 /// # use nom::error_position;
 /// # use nom::{Err,error::ErrorKind, Needed, IResult, Parser};
 /// use nom::character::complete::{alpha1, digit1};
@@ -44,11 +45,13 @@ pub fn alt<List>(l: List) -> Choice<List> {
 
 /// Applies a list of parsers in any order.
 ///
-/// Permutation will succeed if all of the child parsers succeeded.
+/// Permutation will succeed if all the child parsers succeeded.
 /// It takes as argument a tuple of parsers, and returns a
 /// tuple of the parser results.
 ///
-/// ```rust
+/// # Examples
+///
+/// ```
 /// # use nom::{Err,error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::character::complete::{alpha1, digit1};
 /// use nom::branch::permutation;
@@ -70,7 +73,8 @@ pub fn alt<List>(l: List) -> Choice<List> {
 ///
 /// The parsers are applied greedily: if there are multiple unapplied parsers
 /// that could parse the next slice of input, the first one is used.
-/// ```rust
+///
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Parser};
 /// use nom::branch::permutation;
 /// use nom::character::complete::{anychar, char};

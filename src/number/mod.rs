@@ -5,14 +5,11 @@ use core::{
   ops::{Add, BitAnd, BitOrAssign, Not, Shl},
 };
 
-use crate::branch::Choice;
-use crate::bytes::streaming::tag_no_case;
-use crate::character::{Char, Digit1};
-use crate::combinator::{Cut, Opt, Recognize};
 use crate::{
-  branch::alt,
-  character::{char, digit1},
-  combinator::{cut, map, opt, recognize},
+  branch::{alt, Choice},
+  bytes::streaming::tag_no_case,
+  character::{char, digit1, Char, Digit1},
+  combinator::{cut, map, opt, recognize, Cut, Opt, Recognize},
   error::{make_error, ErrorKind, ParseError},
   sequence::pair,
   And, AsBytes, AsChar, Compare, Either, Emit, Err, FloatBits, HasUintCounterpart, IResult, Input,
@@ -205,7 +202,7 @@ where
 
 /// Recognizes an unsigned 1-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_u8;
 ///
@@ -226,7 +223,7 @@ where
 
 /// Recognizes a big endian unsigned 2-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_u16;
 ///
@@ -247,7 +244,7 @@ where
 
 /// Recognizes a big endian unsigned 3-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_u24;
 ///
@@ -268,7 +265,7 @@ where
 
 /// Recognizes a big endian unsigned 4-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_u32;
 ///
@@ -289,7 +286,7 @@ where
 
 /// Recognizes a big endian unsigned 8-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_u64;
 ///
@@ -310,7 +307,7 @@ where
 
 /// Recognizes a big endian unsigned 16-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_u128;
 ///
@@ -332,7 +329,7 @@ where
 /// Recognizes a signed 1-byte integer.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_i8;
 ///
@@ -351,7 +348,7 @@ where
 
 /// Recognizes a big endian signed 2-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_i16;
 ///
@@ -370,7 +367,7 @@ where
 
 /// Recognizes a big endian signed 3-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_i24;
 ///
@@ -399,7 +396,7 @@ where
 
 /// Recognizes a big endian signed 4-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_i32;
 ///
@@ -418,7 +415,7 @@ where
 
 /// Recognizes a big endian signed 8-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_i64;
 ///
@@ -437,7 +434,7 @@ where
 
 /// Recognizes a big endian signed 16-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_i128;
 ///
@@ -612,7 +609,7 @@ where
 
 /// Recognizes an unsigned 1-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_u8;
 ///
@@ -632,7 +629,7 @@ where
 /// Recognizes a little endian unsigned 2-byte integer.
 ///
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_u16;
 ///
@@ -653,7 +650,7 @@ where
 
 /// Recognizes a little endian unsigned 3-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_u24;
 ///
@@ -674,7 +671,7 @@ where
 
 /// Recognizes a little endian unsigned 4-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_u32;
 ///
@@ -695,7 +692,7 @@ where
 
 /// Recognizes a little endian unsigned 8-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_u64;
 ///
@@ -716,7 +713,7 @@ where
 
 /// Recognizes a little endian unsigned 16-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_u128;
 ///
@@ -737,7 +734,7 @@ where
 
 /// Recognizes a signed 1-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_i8;
 ///
@@ -756,7 +753,7 @@ where
 
 /// Recognizes a little endian signed 2-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_i16;
 ///
@@ -777,7 +774,7 @@ where
 
 /// Recognizes a little endian signed 3-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_i24;
 ///
@@ -799,7 +796,7 @@ where
 
 /// Recognizes a little endian signed 4-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_i32;
 ///
@@ -820,7 +817,7 @@ where
 
 /// Recognizes a little endian signed 8-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_i64;
 ///
@@ -841,7 +838,7 @@ where
 
 /// Recognizes a little endian signed 16-byte integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_i128;
 ///
@@ -863,7 +860,7 @@ where
 /// Recognizes an unsigned 1-byte integer
 ///
 /// Note that endianness does not apply to 1-byte numbers.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::u8;
@@ -888,7 +885,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian u16 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian u16 integer.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::u16;
@@ -926,7 +923,7 @@ where
 ///
 /// If the parameter is [`Endianness::Big`], parse a big endian u24 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian u24 integer.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::u24;
@@ -964,7 +961,7 @@ where
 ///
 /// If the parameter is [`Endianness::Big`], parse a big endian u32 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian u32 integer.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::u32;
@@ -1002,7 +999,7 @@ where
 ///
 /// If the parameter is [`Endianness::Big`], parse a big endian u64 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian u64 integer.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::u64;
@@ -1040,7 +1037,7 @@ where
 ///
 /// If the parameter is [`Endianness::Big`], parse a big endian u128 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian u128 integer.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::u128;
@@ -1078,7 +1075,7 @@ where
 ///
 /// Note that endianness does not apply to 1-byte numbers.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::i8;
@@ -1103,7 +1100,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian i16 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian i16 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::i16;
@@ -1142,7 +1139,7 @@ where
 /// If the parameter is `nom::number::Endianness::Big`, parse a big endian i24 integer,
 /// otherwise if `nom::number::Endianness::Little` parse a little endian i24 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::i24;
@@ -1181,7 +1178,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian i32 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian i32 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::i32;
@@ -1220,7 +1217,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian i64 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian i64 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::i64;
@@ -1259,7 +1256,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian i128 integer,
 /// otherwise if [`Endianness::Little`] parse a little endian i128 integer.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::i128;
@@ -1296,7 +1293,7 @@ where
 /// Recognizes a big endian 4-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_f32;
 ///
@@ -1318,7 +1315,7 @@ where
 /// Recognizes a big endian 8-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::be_f64;
 ///
@@ -1362,7 +1359,7 @@ where
 /// Recognizes a little endian 4-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_f32;
 ///
@@ -1384,7 +1381,7 @@ where
 /// Recognizes a little endian 8-byte floating point number.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::le_f64;
 ///
@@ -1430,7 +1427,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian f32 float,
 /// otherwise if [`Endianness::Little`] parse a little endian f32 float.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::f32;
@@ -1469,7 +1466,7 @@ where
 /// If the parameter is [`Endianness::Big`], parse a big endian f64 float,
 /// otherwise if [`Endianness::Little`] parse a little endian f64 float.
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there is not enough data.
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// # use nom::Needed::Size;
 /// use nom::number::f64;
@@ -1507,7 +1504,7 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if it reaches the end of input.
 ///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, Parser};
 /// use nom::number::recognize_float;
 ///

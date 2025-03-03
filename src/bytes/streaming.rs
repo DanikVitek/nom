@@ -1,21 +1,16 @@
 //! Parsers recognizing bytes streams, streaming version
 
-use core::marker::PhantomData;
-
 use crate::error::ParseError;
 use crate::internal::{IResult, Parser};
-use crate::traits::{Compare, FindSubstring, FindToken, ToUsize};
-use crate::Emit;
+use crate::traits::{AsChar, Compare, ExtendInto, FindSubstring, FindToken, Offset, ToUsize};
 use crate::Input;
-use crate::OutputM;
-use crate::Streaming;
 
 /// Recognizes a pattern.
 ///
 /// The input data will be compared to the tag combinator's argument and will return the part of
 /// the input that matches the argument.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::tag;
 ///
@@ -28,27 +23,21 @@ use crate::Streaming;
 /// assert_eq!(parser("S"), Err(Err::Error(Error::new("S", ErrorKind::Tag))));
 /// assert_eq!(parser("H"), Err(Err::Incomplete(Needed::new(4))));
 /// ```
-pub fn tag<T, I, Error: ParseError<I>>(tag: T) -> impl Fn(I) -> IResult<I, I, Error>
+pub fn tag<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
-  move |i: I| {
-    let mut parser = super::Tag {
-      tag: tag.clone(),
-      e: PhantomData,
-    };
-
-    parser.process::<OutputM<Emit, Emit, Streaming>>(i)
-  }
+  let mut parser = super::tag(tag);
+  move |i: I| parser.parse(i)
 }
 
-/// Recognizes a case insensitive pattern.
+/// Recognizes a case-insensitive pattern.
 ///
 /// The input data will be compared to the tag combinator's argument and will return the part of
 /// the input that matches the argument with no regard to case.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::tag_no_case;
 ///
@@ -62,19 +51,13 @@ where
 /// assert_eq!(parser("Something"), Err(Err::Error(Error::new("Something", ErrorKind::Tag))));
 /// assert_eq!(parser(""), Err(Err::Incomplete(Needed::new(5))));
 /// ```
-pub fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> impl Fn(I) -> IResult<I, I, Error>
+pub fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
-  move |i: I| {
-    let mut parser = super::TagNoCase {
-      tag: tag.clone(),
-      e: PhantomData,
-    };
-
-    parser.process::<OutputM<Emit, Emit, Streaming>>(i)
-  }
+  let mut parser = super::tag_no_case(tag);
+  move |i: I| parser.parse(i)
 }
 
 /// Parse till certain characters are met.
@@ -85,7 +68,7 @@ where
 ///
 /// It will return a `Err::Incomplete(Needed::new(1))` if the pattern wasn't met.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::is_not;
 ///
@@ -104,8 +87,7 @@ where
   T: FindToken<<I as Input>::Item>,
 {
   let mut parser = super::is_not(arr);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns the longest input slice (at least 1) that matches the pattern.
@@ -117,7 +99,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(1))` if the pattern wasn't met
 /// or if the pattern reaches the end of the input.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::is_a;
 ///
@@ -137,8 +119,7 @@ where
   T: FindToken<<I as Input>::Item>,
 {
   let mut parser = super::is_a(arr);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns the longest input slice (if any) that matches the predicate.
@@ -149,7 +130,7 @@ where
 /// # Streaming Specific
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(1))` if the pattern reaches the end of the input.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::take_while;
 /// use nom::AsChar;
@@ -169,8 +150,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_while(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns the longest (at least 1) input slice that matches the predicate.
@@ -184,7 +164,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(1))` or if the pattern reaches the end of the input.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_while1;
 /// use nom::AsChar;
@@ -203,8 +183,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_while1(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns the longest (m <= len <= n) input slice  that matches the predicate.
@@ -217,7 +196,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(1))`  if the pattern reaches the end of the input or is too short.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_while_m_n;
 /// use nom::AsChar;
@@ -242,8 +221,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_while_m_n(m, n, cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns the longest input slice (if any) till a predicate is met.
@@ -256,7 +234,7 @@ where
 /// end of input or if there was not match.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::take_till;
 ///
@@ -275,8 +253,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_till(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns the longest (at least 1) input slice till a predicate is met.
@@ -288,7 +265,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(1))` if the match reaches the
 /// end of input or if there was not match.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_till1;
 ///
@@ -307,8 +284,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_till1(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Returns an input slice containing the first N input elements (Input[..N]).
@@ -322,7 +298,7 @@ where
 /// the next few chars, so the result will be `Err::Incomplete(Needed::Unknown)`
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::take;
 ///
@@ -340,11 +316,10 @@ where
   C: ToUsize,
 {
   let mut parser = super::take(count);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
-/// Returns the input slice up to the first occurrence of the pattern.
+/// Returns the slice of input up to the first occurrence of the pattern.
 ///
 /// It doesn't consume the pattern.
 ///
@@ -352,7 +327,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(N))` if the input doesn't
 /// contain the pattern or if the input is smaller than the pattern.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::take_until;
 ///
@@ -371,11 +346,10 @@ where
   T: Clone,
 {
   let mut parser = super::take_until(tag);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
-/// Returns the non empty input slice up to the first occurrence of the pattern.
+/// Returns the non-empty slice of input up to the first occurrence of the pattern.
 ///
 /// It doesn't consume the pattern.
 ///
@@ -383,7 +357,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(N))` if the input doesn't
 /// contain the pattern or if the input is smaller than the pattern.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_until1;
 ///
@@ -403,8 +377,7 @@ where
   T: Clone,
 {
   let mut parser = super::take_until1(tag);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Matches a byte string with escaped characters.
@@ -433,15 +406,14 @@ pub fn escaped<I, Error, F, G>(
   escapable: G,
 ) -> impl FnMut(I) -> IResult<I, I, Error>
 where
-  I: Input + Clone + crate::traits::Offset,
-  <I as Input>::Item: crate::traits::AsChar,
+  I: Input + Offset,
+  <I as Input>::Item: AsChar,
   F: Parser<I, Error = Error>,
   G: Parser<I, Error = Error>,
   Error: ParseError<I>,
 {
   let mut parser = super::escaped(normal, control_char, escapable);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Matches a byte string with escaped characters.
@@ -452,6 +424,7 @@ where
 ///
 /// As an example, the chain `abc\tdef` could be `abc    def` (it also consumes the control character)
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// # use std::str::from_utf8;
@@ -482,16 +455,15 @@ pub fn escaped_transform<I, Error, F, G, O1, O2, ExtendItem, Output>(
   transform: G,
 ) -> impl FnMut(I) -> IResult<I, Output, Error>
 where
-  I: Clone + crate::traits::Offset + Input,
-  I: crate::traits::ExtendInto<Item = ExtendItem, Extender = Output>,
-  O1: crate::traits::ExtendInto<Item = ExtendItem, Extender = Output>,
-  O2: crate::traits::ExtendInto<Item = ExtendItem, Extender = Output>,
-  <I as Input>::Item: crate::traits::AsChar,
+  I: Clone + Offset + Input,
+  I: ExtendInto<Item = ExtendItem, Extender = Output>,
+  O1: ExtendInto<Item = ExtendItem, Extender = Output>,
+  O2: ExtendInto<Item = ExtendItem, Extender = Output>,
+  <I as Input>::Item: AsChar,
   F: Parser<I, Output = O1, Error = Error>,
   G: Parser<I, Output = O2, Error = Error>,
   Error: ParseError<I>,
 {
   let mut parser = super::escaped_transform(normal, control_char, transform);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }

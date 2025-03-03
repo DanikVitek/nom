@@ -60,9 +60,10 @@ where
 /// Counterpart to `bits`, `bytes` transforms its bit stream input into a byte slice for the underlying
 /// parser, allowing byte-slice parsers to work on bit streams.
 ///
-/// A partial byte remaining in the input will be ignored and the given parser will start parsing
+/// A partial byte remaining in the input will be ignored, and the given parser will start parsing
 /// at the next full byte.
 ///
+/// # Example
 /// ```
 /// use nom::bits::{bits, bytes, streaming::take};
 /// use nom::combinator::rest;

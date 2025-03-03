@@ -45,7 +45,7 @@ const MAX_INITIAL_CAPACITY_BYTES: usize = 65536;
 /// return an error, to prevent going into an infinite loop
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::many0;
 /// use nom::bytes::complete::tag;
@@ -132,7 +132,7 @@ where
 /// to prevent going into an infinite loop.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::many1;
 /// use nom::bytes::complete::tag;
@@ -231,7 +231,7 @@ where
 /// `f` keeps going so long as `g` produces [`Err::Error`]. To instead chain an error up, see [`cut`][crate::combinator::cut].
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::many_till;
 /// use nom::bytes::complete::tag;
@@ -336,7 +336,7 @@ where
 /// * `f` Parses the elements of the list.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::separated_list0;
 /// use nom::bytes::complete::tag;
@@ -456,7 +456,7 @@ where
 /// * `f` Parses the elements of the list.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::separated_list1;
 /// use nom::bytes::complete::tag;
@@ -571,7 +571,7 @@ where
 /// to prevent going into an infinite loop.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::many_m_n;
 /// use nom::bytes::complete::tag;
@@ -676,7 +676,7 @@ where
 /// return an error, to prevent going into an infinite loop
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::many0_count;
 /// use nom::bytes::complete::tag;
@@ -758,7 +758,7 @@ where
 /// to prevent going into an infinite loop.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::many1_count;
 /// use nom::bytes::complete::tag;
@@ -848,7 +848,7 @@ where
 /// * `count` How often to apply the parser.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::count;
 /// use nom::bytes::complete::tag;
@@ -929,7 +929,7 @@ where
 /// * `buf` The slice to fill
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::fill;
 /// use nom::bytes::complete::tag;
@@ -1012,7 +1012,7 @@ where
 /// return an error, to prevent going into an infinite loop
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::fold_many0;
 /// use nom::bytes::complete::tag;
@@ -1113,7 +1113,7 @@ where
 /// to prevent going into an infinite loop.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::multi::fold_many1;
 /// use nom::bytes::complete::tag;
@@ -1227,7 +1227,7 @@ where
 /// to prevent going into an infinite loop.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::fold_many_m_n;
 /// use nom::bytes::complete::tag;
@@ -1344,7 +1344,7 @@ where
 /// * `f` The parser to apply.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::number::complete::be_u16;
 /// use nom::multi::length_data;
@@ -1379,7 +1379,7 @@ pub type LengthData<I, E, F> = FlatMap<F, fn(<F as Parser<I>>::Output) -> Take<E
 /// * `g` The parser to apply on the subslice.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::number::complete::be_u16;
 /// use nom::multi::length_value;
@@ -1462,7 +1462,7 @@ where
 /// * `g` The parser to apply repeatedly.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult, Parser};
 /// use nom::number::complete::u8;
 /// use nom::multi::length_count;
@@ -1568,7 +1568,7 @@ where
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
 /// # #[macro_use] extern crate nom;
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::many;
@@ -1588,7 +1588,7 @@ where
 /// This is not limited to `Vec`, other collections like `HashMap`
 /// can be used:
 ///
-/// ```rust
+/// ```
 /// # #[macro_use] extern crate nom;
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::many;
@@ -1618,7 +1618,7 @@ where
 /// If more control is needed on the default value, [fold] can
 /// be used instead:
 ///
-/// ```rust
+/// ```
 /// # #[macro_use] extern crate nom;
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::fold;
@@ -1736,7 +1736,7 @@ where
 ///       the current accumulator.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # #[macro_use] extern crate nom;
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom::multi::fold;

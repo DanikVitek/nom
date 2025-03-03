@@ -58,16 +58,14 @@ where
   }
 
   fn is_postfix(&self) -> bool {
-    match self {
-      Operator::Postfix(_, _) => true,
-      _ => false,
-    }
+    matches!(self, Operator::Postfix(_, _))
   }
 }
 
-/// Runs the inner parser and transforms the result into an unary operator with the given precedence.
+/// Runs the inner parser and transforms the result into a unary operator with the given precedence.
 ///
-/// Intended for use with [precedence].
+/// Intended for use with [`precedence`].
+///
 /// # Arguments
 /// * `precedence` The precedence of the operator.
 /// * `parser` The parser to apply.
@@ -87,7 +85,8 @@ where
 
 /// Runs the inner parser and transforms the result into a binary operator with the given precedence and associativity.
 ///
-/// Intended for use with [precedence].
+/// Intended for use with [`precedence`].
+///
 /// # Arguments
 /// * `precedence` The precedence of the operator.
 /// * `assoc` The associativity of the operator.
@@ -127,7 +126,7 @@ where
 /// operand is returned as the result.
 ///
 /// It will return `Err(Err:Error((_, ErrorKind::Precedence)))` if:
-/// * the `fold` function returns an `Err`.
+/// * the `fold` function returns an [`Err`](Result::Err).
 /// * more than one or no operands remain after the expression has been evaluated completely.
 /// * the input does not match the pattern: `prefix* operand postfix* (binary prefix* operand postfix*)*`
 ///
@@ -139,7 +138,7 @@ where
 /// * `fold` Function that evaluates a single operation and returns the result.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult};
 /// use nom_language::precedence::{precedence, unary_op, binary_op, Assoc, Operation};
 /// use nom::character::complete::digit1;
@@ -370,33 +369,34 @@ where
 
 /// Applies a parser multiple times separated by another parser.
 ///
-/// It is similar to [`separated_list1`][nom::multi::separated_list1] but instead of collecting
+/// It is similar to [`separated_list1`](nom::multi::separated_list1) but instead of collecting
 /// into a vector, you have a callback to build the output.
 ///
-/// In a LALR grammar a left recursive operator is usually built with a rule syntax such as:
+/// In a LALR grammar, a left recursive operator is usually built with a rule syntax such as:
 ///  * A := A op B | B
 ///
-/// If you try to parse that wth [`alt`][nom::branch::alt] it will fail with a stack overflow
-/// because the recusion is unlimited. This function solves this problem by converting the recusion
-/// into an iteration.
+/// If you try to parse that wth [`alt`](nom::branch::alt) it will fail with a stack overflow
+/// because the recursion is unlimited.
+/// This function solves this problem by converting the recursion into an iteration.
 ///
 /// Compare with a right recursive operator, that in LALR would be:
 ///  * A := B op A | B
 /// Or equivalently:
 ///  * A := B (op A)?
 ///
-///  That can be written in `nom` trivially.
+/// That can be written in [`nom`] trivially.
 ///
-/// This stops when either parser returns an error and returns the last built value. to instead chain an error up, see
-/// [`cut`][nom::combinator::cut].
+/// This stops when either parser returns an error and returns the last built value.
+/// To instead chain an error up, see [`cut`](nom::combinator::cut).
 ///
 /// # Arguments
 /// * `child` The parser to apply.
 /// * `operator` Parses the operator between argument.
 /// * `init` A function returning the initial value.
-/// * `fold` The function that combines a result of `f` with
-///       the current accumulator.
-/// ```rust
+/// * `fold` The function that combines a result of `f` with the current accumulator.
+///
+/// # Example
+/// ```
 /// # #[macro_use] extern crate nom;
 /// # use nom::{Err, error::ErrorKind, Needed, IResult, Parser};
 /// use nom_language::precedence::left_assoc;
@@ -423,11 +423,7 @@ where
 /// assert_eq!(single("((1+2*3)+4)"), Ok(("", String::from("++1*234"))));
 /// assert_eq!(single("(1+(2*3+4))"), Ok(("", String::from("+1+*234"))));
 /// ```
-pub fn left_assoc<I, E, O, OP, G, F, B>(
-  child: F,
-  operator: G,
-  builder: B,
-) -> LeftAssoc<F, G, B>
+pub fn left_assoc<I, E, O, OP, G, F, B>(child: F, operator: G, builder: B) -> LeftAssoc<F, G, B>
 where
   I: Clone + Input,
   E: ParseError<I>,

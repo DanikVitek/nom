@@ -9,7 +9,7 @@ use crate::traits::{Input, ToUsize};
 /// Generates a parser taking `count` bits
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::bits::complete::take;
 /// # use nom::IResult;
 /// # use nom::error::{Error, ErrorKind};
@@ -106,7 +106,7 @@ where
 /// Parses one specific bit as a bool.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::bits::complete::bool;
 /// # use nom::IResult;
 /// # use nom::error::{Error, ErrorKind};

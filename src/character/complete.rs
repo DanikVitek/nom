@@ -1,24 +1,19 @@
-//! Character specific parsers and combinators, complete input version.
+//! Character-specific parsers and combinators, complete input version.
 //!
 //! Functions recognizing specific characters.
 
 use crate::branch::alt;
 use crate::combinator::opt;
-use crate::error::ErrorKind;
-use crate::error::ParseError;
+use crate::error::{ErrorKind, ParseError};
 use crate::internal::{Err, IResult};
-use crate::traits::{AsChar, FindToken, Input};
-use crate::traits::{Compare, CompareResult};
-use crate::Complete;
-use crate::Emit;
-use crate::OutputM;
+use crate::traits::{AsChar, Compare, CompareResult, FindToken, Input};
 use crate::Parser;
 
 /// Recognizes one character.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{ErrorKind, Error}, IResult};
 /// # use nom::character::complete::char;
@@ -36,14 +31,14 @@ where
   <I as Input>::Item: AsChar,
 {
   let mut parser = super::char(c);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Recognizes one character and checks that it satisfies a predicate
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{ErrorKind, Error}, Needed, IResult};
 /// # use nom::character::complete::satisfy;
@@ -61,14 +56,14 @@ where
   F: Fn(char) -> bool,
 {
   let mut parser = super::satisfy(predicate);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Recognizes one of the provided characters.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind};
 /// # use nom::character::complete::one_of;
@@ -83,14 +78,14 @@ where
   T: FindToken<char>,
 {
   let mut parser = super::one_of(list);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
-/// Recognizes a character that is not in the provided characters.
+/// Recognizes a character not in the provided characters.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind};
 /// # use nom::character::complete::none_of;
@@ -105,14 +100,14 @@ where
   T: FindToken<char>,
 {
   let mut parser = super::none_of(list);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Recognizes the string "\r\n".
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult};
 /// # use nom::character::complete::crlf;
@@ -142,8 +137,8 @@ where
 /// Recognizes a string of any char except '\r\n' or '\n'.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::not_line_ending;
@@ -193,8 +188,8 @@ where
 /// Recognizes an end of line (both '\n' and '\r\n').
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::line_ending;
@@ -224,8 +219,8 @@ where
 /// Matches a newline character '\n'.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::newline;
@@ -248,8 +243,8 @@ where
 /// Matches a tab character '\t'.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::tab;
@@ -273,8 +268,8 @@ where
 /// accept a `str`, but not a `&[u8]`, unlike many other nom parsers.
 ///
 /// *Complete version*: Will return an error if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{character::complete::anychar, Err, error::{Error, ErrorKind}, IResult};
 /// fn parser(input: &str) -> IResult<&str, char> {
@@ -298,10 +293,10 @@ where
 
 /// Recognizes zero or more lowercase and uppercase ASCII alphabetic characters: a-z, A-Z
 ///
-/// *Complete version*: Will return the whole input if no terminating token is found (a non
-/// alphabetic character).
-/// # Example
+/// *Complete version*: Will return the whole input if no terminating token is found
+/// (a non-alphabetic character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::alpha0;
@@ -324,9 +319,9 @@ where
 /// Recognizes one or more lowercase and uppercase ASCII alphabetic characters: a-z, A-Z
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
-/// or the whole input if no terminating token is found  (a non alphabetic character).
-/// # Example
+/// or the whole input if no terminating token is found (a non-alphabetic character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::alpha1;
@@ -349,9 +344,9 @@ where
 /// Recognizes zero or more ASCII numerical characters: 0-9
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
-/// or the whole input if no terminating token is found (a non digit character).
-/// # Example
+/// or the whole input if no terminating token is found (a non-digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::digit0;
@@ -375,8 +370,9 @@ where
 /// Recognizes one or more ASCII numerical characters: 0-9
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
-/// or the whole input if no terminating token is found (a non digit character).
-/// # Example
+/// or the whole input if no terminating token is found (a non-digit character).
+///
+/// # Examples
 ///
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
@@ -418,8 +414,8 @@ where
 /// Recognizes zero or more ASCII hexadecimal numerical characters: 0-9, A-F, a-f
 ///
 /// *Complete version*: Will return the whole input if no terminating token is found (a non hexadecimal digit character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::hex_digit0;
@@ -442,8 +438,8 @@ where
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
 /// or the whole input if no terminating token is found (a non hexadecimal digit character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::hex_digit1;
@@ -467,8 +463,8 @@ where
 ///
 /// *Complete version*: Will return the whole input if no terminating token is found (a non octal
 /// digit character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::oct_digit0;
@@ -492,8 +488,8 @@ where
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
 /// or the whole input if no terminating token is found (a non octal digit character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::oct_digit1;
@@ -517,8 +513,8 @@ where
 ///
 /// *Complete version*: Will return the whole input if no terminating token is found (a non binary
 /// digit character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::bin_digit0;
@@ -542,8 +538,8 @@ where
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
 /// or the whole input if no terminating token is found (a non binary digit character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::bin_digit1;
@@ -567,8 +563,8 @@ where
 ///
 /// *Complete version*: Will return the whole input if no terminating token is found (a non
 /// alphanumerical character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::alphanumeric0;
@@ -592,8 +588,8 @@ where
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
 /// or the whole input if no terminating token is found (a non alphanumerical character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::alphanumeric1;
@@ -617,8 +613,8 @@ where
 ///
 /// *Complete version*: Will return the whole input if no terminating token is found (a non space
 /// character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::space0;
@@ -645,8 +641,8 @@ where
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
 /// or the whole input if no terminating token is found (a non space character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::space1;
@@ -676,8 +672,8 @@ where
 ///
 /// *Complete version*: will return the whole input if no terminating token is found (a non space
 /// character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::complete::multispace0;
@@ -704,8 +700,8 @@ where
 ///
 /// *Complete version*: will return an error if there's not enough input data,
 /// or the whole input if no terminating token is found (a non space character).
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::complete::multispace1;

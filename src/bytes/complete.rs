@@ -1,14 +1,9 @@
-//! Parsers recognizing bytes streams, complete input version
-
-use core::marker::PhantomData;
+//! Parsers recognizing byte streams, complete input version
 
 use crate::error::ParseError;
 use crate::internal::{IResult, Parser};
-use crate::traits::{Compare, FindSubstring, FindToken, ToUsize};
-use crate::Complete;
-use crate::Emit;
+use crate::traits::{AsChar, Compare, ExtendInto, FindSubstring, FindToken, Offset, ToUsize};
 use crate::Input;
-use crate::OutputM;
 
 /// Recognizes a pattern
 ///
@@ -16,8 +11,9 @@ use crate::OutputM;
 /// the input that matches the argument
 ///
 /// It will return `Err(Err::Error((_, ErrorKind::Tag)))` if the input doesn't match the pattern
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::tag;
 ///
@@ -29,29 +25,24 @@ use crate::OutputM;
 /// assert_eq!(parser("Something"), Err(Err::Error(Error::new("Something", ErrorKind::Tag))));
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Tag))));
 /// ```
-pub fn tag<T, I, Error: ParseError<I>>(tag: T) -> impl Fn(I) -> IResult<I, I, Error>
+pub fn tag<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
-  move |i: I| {
-    let mut parser = super::Tag {
-      tag: tag.clone(),
-      e: PhantomData,
-    };
-
-    parser.process::<OutputM<Emit, Emit, Complete>>(i)
-  }
+  let mut parser = super::tag(tag);
+  move |i: I| parser.parse_complete(i)
 }
 
-/// Recognizes a case insensitive pattern.
+/// Recognizes a case-insensitive pattern.
 ///
 /// The input data will be compared to the tag combinator's argument and will return the part of
 /// the input that matches the argument with no regard to case.
 ///
 /// It will return `Err(Err::Error((_, ErrorKind::Tag)))` if the input doesn't match the pattern.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::tag_no_case;
 ///
@@ -65,30 +56,26 @@ where
 /// assert_eq!(parser("Something"), Err(Err::Error(Error::new("Something", ErrorKind::Tag))));
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Tag))));
 /// ```
-pub fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> impl Fn(I) -> IResult<I, I, Error>
+pub fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
-  move |i: I| {
-    let mut parser = super::TagNoCase {
-      tag: tag.clone(),
-      e: PhantomData,
-    };
-
-    parser.process::<OutputM<Emit, Emit, Complete>>(i)
-  }
+  let mut parser = super::tag_no_case(tag);
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Parse till certain characters are met.
 ///
-/// The parser will return the longest slice till one of the characters of the combinator's argument are met.
+/// The parser will return the longest slice
+/// till one of the characters of the combinator's argument is met.
 ///
 /// It doesn't consume the matched character.
 ///
 /// It will return a `Err::Error(("", ErrorKind::IsNot))` if the pattern wasn't met.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::is_not;
 ///
@@ -107,18 +94,18 @@ where
   T: FindToken<<I as Input>::Item>,
 {
   let mut parser = super::is_not(arr);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns the longest input slice (at least 1) that matches the pattern.
 ///
-/// The parser will return the longest slice consisting of the characters in provided in the
+/// The parser will return the longest slice consisting of the characters provided in the
 /// combinator's argument.
 ///
 /// It will return a `Err(Err::Error((_, ErrorKind::IsA)))` if the pattern wasn't met.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::is_a;
 ///
@@ -138,16 +125,16 @@ where
   T: FindToken<<I as Input>::Item>,
 {
   let mut parser = super::is_a(arr);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns the longest input slice (if any) that matches the predicate.
 ///
 /// The parser will return the longest slice that matches the given predicate *(a function that
 /// takes the input and returns a bool)*.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::complete::take_while;
 /// use nom::AsChar;
@@ -167,8 +154,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_while(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns the longest (at least 1) input slice that matches the predicate.
@@ -177,8 +163,9 @@ where
 /// takes the input and returns a bool)*.
 ///
 /// It will return an `Err(Err::Error((_, ErrorKind::TakeWhile1)))` if the pattern wasn't met.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::take_while1;
 /// use nom::AsChar;
@@ -197,8 +184,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_while1(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns the longest (m <= len <= n) input slice that matches the predicate.
@@ -208,8 +194,9 @@ where
 ///
 /// It will return an `Err::Error((_, ErrorKind::TakeWhileMN))` if the pattern wasn't met or is out
 /// of range (m <= len <= n).
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::take_while_m_n;
 /// use nom::AsChar;
@@ -234,16 +221,16 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_while_m_n(m, n, cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns the longest input slice (if any) till a predicate is met.
 ///
 /// The parser will return the longest slice till the given predicate *(a function that
 /// takes the input and returns a bool)*.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::complete::take_till;
 ///
@@ -262,8 +249,7 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_till(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns the longest (at least 1) input slice till a predicate is met.
@@ -274,7 +260,7 @@ where
 /// It will return `Err(Err::Error((_, ErrorKind::TakeTill1)))` if the input is empty or the
 /// predicate matches the first input.
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::take_till1;
 ///
@@ -293,15 +279,16 @@ where
   F: Fn(<I as Input>::Item) -> bool,
 {
   let mut parser = super::take_till1(cond);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Returns an input slice containing the first N input elements (Input[..N]).
 ///
 /// It will return `Err(Err::Error((_, ErrorKind::Eof)))` if the input is shorter than the argument.
-/// # Example
-/// ```rust
+///
+/// # Examples
+///
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::take;
 ///
@@ -319,7 +306,7 @@ where
 /// `&str` it will take a number of `char`'s, whereas for a `&[u8]` it will
 /// take that many `u8`'s:
 ///
-/// ```rust
+/// ```
 /// use nom::error::Error;
 /// use nom::bytes::complete::take;
 ///
@@ -332,16 +319,16 @@ where
   C: ToUsize,
 {
   let mut parser = super::take(count);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
-/// Returns the input slice up to the first occurrence of the pattern.
+/// Returns the slice of input up to the first occurrence of the pattern.
 ///
 /// It doesn't consume the pattern. It will return `Err(Err::Error((_, ErrorKind::TakeUntil)))`
 /// if the pattern wasn't met.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::take_until;
 ///
@@ -357,19 +344,19 @@ where
 pub fn take_until<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + FindSubstring<T>,
-  T: Input + Clone,
+  T: Input,
 {
   let mut parser = super::take_until(tag);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
-/// Returns the non empty input slice up to the first occurrence of the pattern.
+/// Returns the non-empty slice of input up to the first occurrence of the pattern.
 ///
 /// It doesn't consume the pattern. It will return `Err(Err::Error((_, ErrorKind::TakeUntil)))`
 /// if the pattern wasn't met.
+///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::take_until1;
 ///
@@ -386,11 +373,10 @@ where
 pub fn take_until1<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + FindSubstring<T>,
-  T: Input + Clone,
+  T: Input,
 {
   let mut parser = super::take_until1(tag);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Matches a byte string with escaped characters.
@@ -398,6 +384,7 @@ where
 /// * The first argument matches the normal characters (it must not accept the control character)
 /// * The second argument is the control character (like `\` in most languages)
 /// * The third argument matches the escaped characters
+///
 /// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
@@ -419,15 +406,14 @@ pub fn escaped<'a, I, Error, F, G>(
   escapable: G,
 ) -> impl FnMut(I) -> IResult<I, I, Error>
 where
-  I: Clone + crate::traits::Offset + Input + 'a,
-  <I as Input>::Item: crate::traits::AsChar,
+  I: Clone + Offset + Input + 'a,
+  <I as Input>::Item: AsChar,
   F: Parser<I, Error = Error>,
   G: Parser<I, Error = Error>,
   Error: ParseError<I>,
 {
   let mut parser = super::escaped(normal, control_char, escapable);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 /// Matches a byte string with escaped characters.
@@ -438,6 +424,7 @@ where
 ///
 /// As an example, the chain `abc\tdef` could be `abc    def` (it also consumes the control character)
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// # use std::str::from_utf8;
@@ -469,25 +456,23 @@ pub fn escaped_transform<I, Error, F, G, O1, O2, ExtendItem, Output>(
   transform: G,
 ) -> impl FnMut(I) -> IResult<I, Output, Error>
 where
-  I: Clone + crate::traits::Offset + Input,
-  I: crate::traits::ExtendInto<Item = ExtendItem, Extender = Output>,
-  O1: crate::traits::ExtendInto<Item = ExtendItem, Extender = Output>,
-  O2: crate::traits::ExtendInto<Item = ExtendItem, Extender = Output>,
-  <I as Input>::Item: crate::traits::AsChar,
+  I: Clone + Offset + Input,
+  I: ExtendInto<Item = ExtendItem, Extender = Output>,
+  O1: ExtendInto<Item = ExtendItem, Extender = Output>,
+  O2: ExtendInto<Item = ExtendItem, Extender = Output>,
+  <I as Input>::Item: AsChar,
   F: Parser<I, Output = O1, Error = Error>,
   G: Parser<I, Output = O2, Error = Error>,
   Error: ParseError<I>,
 {
   let mut parser = super::escaped_transform(normal, control_char, transform);
-
-  move |i: I| parser.process::<OutputM<Emit, Emit, Complete>>(i)
+  move |i: I| parser.parse_complete(i)
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::error::ErrorKind;
-  use crate::AsChar;
   use crate::Err;
 
   #[test]

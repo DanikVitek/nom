@@ -1,6 +1,8 @@
-//! Character specific parsers and combinators
+//! Character-specific parsers and combinators
 //!
 //! Functions recognizing specific characters
+
+// FIXME: all doc tests must refer to the parsers from this module -- not from `complete` or `streaming`!
 
 use core::marker::PhantomData;
 
@@ -8,7 +10,7 @@ use crate::error::ErrorKind;
 use crate::FindToken;
 use crate::IsStreaming;
 use crate::Mode;
-use crate::{error::ParseError, AsChar, Err, IResult, Input, Needed, Parser};
+use crate::{error::ParseError, AsChar, Err, Input, Needed, Parser};
 
 #[cfg(test)]
 mod tests;
@@ -44,7 +46,7 @@ pub fn is_oct_digit(chr: u8) -> bool {
   matches!(chr, 0x30..=0x37)
 }
 
-/// Tests if byte is ASCII binary digit: 0-1
+/// Tests if byte is an ASCII binary digit: 0-1
 ///
 /// # Example
 ///
@@ -103,7 +105,7 @@ where
   Char { c, e: PhantomData }
 }
 
-/// Parser implementation for [char()]
+/// Parser implementation for [`char`]
 pub struct Char<E> {
   c: char,
   e: PhantomData<E>,
@@ -272,7 +274,7 @@ where
   }
 }
 
-//. Recognizes a character that is not in the provided characters.
+/// Recognizes a character not in the provided characters.
 ///
 /// # Example
 ///
@@ -329,24 +331,26 @@ where
 /// # Example
 ///
 /// ```
-/// # use nom::{character::complete::anychar, Err, error::{Error, ErrorKind}, IResult};
-/// fn parser(input: &str) -> IResult<&str, char> {
-///     anychar(input)
+/// # use nom::{character::anychar, Err, error::{Error, ErrorKind}, IResult, Parser, Needed};
+/// fn parser_complete(input: &str) -> IResult<&str, char> {
+///     anychar().parse_complete(input)
 /// }
+/// fn parser_streaming(input: &str) -> IResult<&str, char> {
+///     anychar().parse(input)
+/// }
+/// 
+/// assert_eq!(parser_complete("abc"), Ok(("bc",'a')));
+/// assert_eq!(parser_complete(""), Err(Err::Error(Error::new("", ErrorKind::Eof))));
 ///
-/// assert_eq!(parser("abc"), Ok(("bc",'a')));
-/// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Eof))));
+/// assert_eq!(parser_streaming("abc"), Ok(("bc",'a')));
+/// assert_eq!(parser_streaming(""), Err(Err::Incomplete(Needed::new(1))));
 /// ```
-pub fn anychar<T, E: ParseError<T>>(input: T) -> IResult<T, char, E>
+pub fn anychar<I, E: ParseError<I>>() -> AnyChar<E>
 where
-  T: Input,
-  <T as Input>::Item: AsChar,
+  I: Input,
+  <I as Input>::Item: AsChar,
 {
-  let mut it = input.iter_elements();
-  match it.next() {
-    None => Err(Err::Error(E::from_error_kind(input, ErrorKind::Eof))),
-    Some(c) => Ok((input.take_from(c.len()), c.as_char())),
-  }
+  AnyChar { e: PhantomData }
 }
 
 /// Parser implementation for char
@@ -366,16 +370,11 @@ where
     &mut self,
     i: I,
   ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
-    match (i).iter_elements().next() {
-      None => {
-        if OM::Incomplete::is_streaming() {
-          Err(Err::Incomplete(Needed::new(1)))
-        } else {
-          Err(Err::Error(OM::Error::bind(|| {
-            Error::from_error_kind(i, ErrorKind::Eof)
-          })))
-        }
-      }
+    match i.iter_elements().next() {
+      None if OM::Incomplete::is_streaming() => Err(Err::Incomplete(Needed::new(1))),
+      None => Err(Err::Error(OM::Error::bind(|| {
+        Error::from_error_kind(i, ErrorKind::Eof)
+      }))),
       Some(c) => Ok((i.take_from(c.len()), OM::Output::bind(|| c.as_char()))),
     }
   }
@@ -385,14 +384,19 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
 /// or if no terminating token is found (a non-digit character).
+///
 /// # Example
 ///
 /// ```
-/// # use nom::{Err, error::ErrorKind, IResult, Needed};
-/// # use nom::character::streaming::digit1;
-/// assert_eq!(digit1::<_, (_, ErrorKind)>("21c"), Ok(("c", "21")));
-/// assert_eq!(digit1::<_, (_, ErrorKind)>("c1"), Err(Err::Error(("c1", ErrorKind::Digit))));
-/// assert_eq!(digit1::<_, (_, ErrorKind)>(""), Err(Err::Incomplete(Needed::new(1))));
+/// # use nom::{Err, error::ErrorKind, IResult, Needed, Parser};
+/// # use nom::character::digit1;
+/// assert_eq!(digit1::<_, (_, ErrorKind)>().parse("21c"), Ok(("c", "21")));
+/// assert_eq!(digit1::<_, (_, ErrorKind)>().parse("c1"), Err(Err::Error(("c1", ErrorKind::Digit))));
+/// assert_eq!(digit1::<_, (_, ErrorKind)>().parse(""), Err(Err::Incomplete(Needed::new(1))));
+///
+/// assert_eq!(digit1::<_, (_, ErrorKind)>().parse_complete("21c"), Ok(("c", "21")));
+/// assert_eq!(digit1::<_, (_, ErrorKind)>().parse_complete("c1"), Err(Err::Error(("c1", ErrorKind::Digit))));
+/// assert_eq!(digit1::<_, (_, ErrorKind)>().parse_complete(""), Err(Err::Error(("", ErrorKind::Digit))));
 /// ```
 pub fn digit1<T, E: ParseError<T>>() -> Digit1<E>
 where
@@ -428,14 +432,19 @@ where
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
 /// or if no terminating token is found (a non-space character).
+///
 /// # Example
 ///
 /// ```
-/// # use nom::{Err, error::ErrorKind, IResult, Needed};
-/// # use nom::character::streaming::multispace0;
-/// assert_eq!(multispace0::<_, (_, ErrorKind)>(" \t\n\r21c"), Ok(("21c", " \t\n\r")));
-/// assert_eq!(multispace0::<_, (_, ErrorKind)>("Z21c"), Ok(("Z21c", "")));
-/// assert_eq!(multispace0::<_, (_, ErrorKind)>(""), Err(Err::Incomplete(Needed::new(1))));
+/// # use nom::{Err, error::ErrorKind, IResult, Needed, Parser};
+/// # use nom::character::multispace0;
+/// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse(" \t\n\r21c"), Ok(("21c", " \t\n\r")));
+/// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse("Z21c"), Ok(("Z21c", "")));
+/// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse(""), Err(Err::Incomplete(Needed::new(1))));
+///
+/// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse_complete(" \t\n\r21c"), Ok(("21c", " \t\n\r")));
+/// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse_complete("Z21c"), Ok(("Z21c", "")));
+/// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse_complete(""), Ok(("", "")));
 /// ```
 pub fn multispace0<I, E: ParseError<I>>() -> MultiSpace0<E>
 where
@@ -443,10 +452,6 @@ where
   <I as Input>::Item: AsChar,
 {
   MultiSpace0 { e: PhantomData }
-  /*input.split_at_position(|item| {
-    let c = item.as_char();
-    !(c == ' ' || c == '\t' || c == '\r' || c == '\n')
-  })*/
 }
 
 /// Parser implementation for [`multispace0`]

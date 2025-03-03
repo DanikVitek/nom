@@ -1,17 +1,15 @@
 //! Traits input types have to implement to work with nom combinators
-use core::iter::Enumerate;
-use core::str::CharIndices;
+use core::{
+  iter::{Copied, Enumerate},
+  ops::{
+    Bound, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
+  },
+  slice::Iter,
+  str::{from_utf8, CharIndices, Chars, FromStr},
+};
 
 use crate::error::{ErrorKind, ParseError};
 use crate::internal::{Err, IResult, Needed};
-use crate::lib::std::iter::Copied;
-use crate::lib::std::ops::{
-  Bound, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
-};
-use crate::lib::std::slice::Iter;
-use crate::lib::std::str::from_utf8;
-use crate::lib::std::str::Chars;
-use crate::lib::std::str::FromStr;
 use crate::IsStreaming;
 use crate::Mode;
 

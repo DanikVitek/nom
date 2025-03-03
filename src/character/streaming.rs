@@ -9,16 +9,13 @@ use crate::error::ParseError;
 use crate::internal::{Err, IResult, Needed};
 use crate::traits::{AsChar, FindToken, Input};
 use crate::traits::{Compare, CompareResult};
-use crate::Emit;
-use crate::OutputM;
 use crate::Parser;
-use crate::Streaming;
 
 /// Recognizes one character.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{ErrorKind, Error}, Needed, IResult};
 /// # use nom::character::streaming::char;
@@ -35,14 +32,14 @@ where
   <I as Input>::Item: AsChar,
 {
   let mut parser = super::char(c);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Recognizes one character and checks that it satisfies a predicate
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{ErrorKind, Error}, Needed, IResult};
 /// # use nom::character::streaming::satisfy;
@@ -60,14 +57,14 @@ where
   F: Fn(char) -> bool,
 {
   let mut parser = super::satisfy(cond);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Recognizes one of the provided characters.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::character::streaming::one_of;
@@ -82,14 +79,14 @@ where
   T: FindToken<char>,
 {
   let mut parser = super::one_of(list);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Recognizes a character that is not in the provided characters.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, Needed};
 /// # use nom::character::streaming::none_of;
@@ -104,14 +101,14 @@ where
   T: FindToken<char>,
 {
   let mut parser = super::none_of(list);
-  move |i: I| parser.process::<OutputM<Emit, Emit, Streaming>>(i)
+  move |i: I| parser.parse(i)
 }
 
 /// Recognizes the string "\r\n".
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::crlf;
@@ -138,8 +135,8 @@ where
 /// Recognizes a string of any char except '\r\n' or '\n'.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, IResult, Needed};
 /// # use nom::character::streaming::not_line_ending;
@@ -185,8 +182,8 @@ where
 /// Recognizes an end of line (both '\n' and '\r\n').
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::line_ending;
@@ -213,11 +210,11 @@ where
   }
 }
 
-/// Matches a newline character '\\n'.
+/// Matches a newline character '\n'.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::newline;
@@ -236,8 +233,8 @@ where
 /// Matches a tab character '\t'.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::tab;
@@ -256,8 +253,8 @@ where
 /// Matches one element as a character.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data.
-/// # Example
 ///
+/// # Example
 /// ```
 /// # use nom::{character::streaming::anychar, Err, error::ErrorKind, IResult, Needed};
 /// assert_eq!(anychar::<_, (_, ErrorKind)>("abc"), Ok(("bc",'a')));
@@ -278,9 +275,9 @@ where
 /// Recognizes zero or more lowercase and uppercase ASCII alphabetic characters: a-z, A-Z
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non alphabetic character).
-/// # Example
+/// or if no terminating token is found (a non-alphabetic character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::alpha0;
@@ -299,9 +296,9 @@ where
 /// Recognizes one or more lowercase and uppercase ASCII alphabetic characters: a-z, A-Z
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non alphabetic character).
-/// # Example
+/// or if no terminating token is found (a non-alphabetic character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::alpha1;
@@ -320,9 +317,9 @@ where
 /// Recognizes zero or more ASCII numerical characters: 0-9
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non digit character).
-/// # Example
+/// or if no terminating token is found (a non-digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::digit0;
@@ -341,9 +338,9 @@ where
 /// Recognizes one or more ASCII numerical characters: 0-9
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non digit character).
-/// # Example
+/// or if no terminating token is found (a non-digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::digit1;
@@ -362,9 +359,9 @@ where
 /// Recognizes zero or more ASCII hexadecimal numerical characters: 0-9, A-F, a-f
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non hexadecimal digit character).
-/// # Example
+/// or if no terminating token is found (a non-hexadecimal digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::hex_digit0;
@@ -383,9 +380,9 @@ where
 /// Recognizes one or more ASCII hexadecimal numerical characters: 0-9, A-F, a-f
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non hexadecimal digit character).
-/// # Example
+/// or if no terminating token is found (a non-hexadecimal digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::hex_digit1;
@@ -404,9 +401,9 @@ where
 /// Recognizes zero or more octal characters: 0-7
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non octal digit character).
-/// # Example
+/// or if no terminating token is found (a non-octal digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::oct_digit0;
@@ -425,9 +422,9 @@ where
 /// Recognizes one or more octal characters: 0-7
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non octal digit character).
-/// # Example
+/// or if no terminating token is found (a non-octal digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::oct_digit1;
@@ -446,9 +443,9 @@ where
 /// Recognizes zero or more binary characters: 0-1
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non binary digit character).
-/// # Example
+/// or if no terminating token is found (a non-binary digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::bin_digit0;
@@ -467,9 +464,9 @@ where
 /// Recognizes one or more binary characters: 0-1
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non binary digit character).
-/// # Example
+/// or if no terminating token is found (a non-binary digit character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::bin_digit1;
@@ -488,9 +485,9 @@ where
 /// Recognizes zero or more ASCII numerical and alphabetic characters: 0-9, a-z, A-Z
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non alphanumerical character).
-/// # Example
+/// or if no terminating token is found (a non-alphanumerical character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::alphanumeric0;
@@ -509,9 +506,9 @@ where
 /// Recognizes one or more ASCII numerical and alphabetic characters: 0-9, a-z, A-Z
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non alphanumerical character).
-/// # Example
+/// or if no terminating token is found (a non-alphanumerical character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::alphanumeric1;
@@ -530,9 +527,9 @@ where
 /// Recognizes zero or more spaces and tabs.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non space character).
-/// # Example
+/// or if no terminating token is found (a non-space character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::space0;
@@ -553,9 +550,9 @@ where
 /// Recognizes one or more spaces and tabs.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non space character).
-/// # Example
+/// or if no terminating token is found (a non-space character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::space1;
@@ -580,9 +577,9 @@ where
 /// Recognizes zero or more spaces, tabs, carriage returns and line feeds.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non space character).
-/// # Example
+/// or if no terminating token is found (a non-space character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::multispace0;
@@ -604,9 +601,9 @@ where
 /// Recognizes one or more spaces, tabs, carriage returns and line feeds.
 ///
 /// *Streaming version*: Will return `Err(nom::Err::Incomplete(_))` if there's not enough input data,
-/// or if no terminating token is found (a non space character).
-/// # Example
+/// or if no terminating token is found (a non-space character).
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, IResult, Needed};
 /// # use nom::character::streaming::multispace1;
@@ -648,117 +645,111 @@ where
 
 #[doc(hidden)]
 macro_rules! ints {
-    ($($t:tt)+) => {
-        $(
+  ($($t:tt)+) => {
+      $(
         /// will parse a number in text form to a number
         ///
         /// *Complete version*: can parse until the end of input.
         pub fn $t<T, E: ParseError<T>>(input: T) -> IResult<T, $t, E>
-            where
-            T: Input +  Clone,
-            <T as Input>::Item: AsChar,
-            T: for <'a> Compare<&'a[u8]>,
-            {
-              let (i, sign) = sign(input.clone())?;
-
-                if i.input_len() == 0 {
-                    return Err(Err::Incomplete(Needed::new(1)));
+        where
+          T: Input +  Clone,
+          <T as Input>::Item: AsChar,
+          T: for <'a> Compare<&'a[u8]>,
+        {
+          let (i, sign) = sign(input.clone())?;
+          if i.input_len() == 0 {
+            return Err(Err::Incomplete(Needed::new(1)));
+          }
+          let mut value: $t = 0;
+          if sign {
+            let mut pos = 0;
+            for c in i.iter_elements() {
+              match c.as_char().to_digit(10) {
+                None => {
+                  if pos == 0 {
+                    return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit)));
+                  } else {
+                    return Ok((i.take_from(pos), value));
+                  }
+                },
+                Some(d) => match value.checked_mul(10).and_then(|v| v.checked_add(d as $t)) {
+                  None => return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit))),
+                  Some(v) => {
+                    pos += c.len();
+                    value = v;
+                  },
                 }
-
-                let mut value: $t = 0;
-                if sign {
-                    let mut pos = 0;
-                    for c in i.iter_elements() {
-                        match c.as_char().to_digit(10) {
-                            None => {
-                                if pos == 0 {
-                                    return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit)));
-                                } else {
-                                    return Ok((i.take_from(pos), value));
-                                }
-                            },
-                            Some(d) => match value.checked_mul(10).and_then(|v| v.checked_add(d as $t)) {
-                                None => return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit))),
-                                Some(v) => {
-                                  pos += c.len();
-                                  value = v;
-                                },
-                            }
-                        }
-                    }
-                } else {
-                    let mut pos = 0;
-                    for c in i.iter_elements() {
-                        match c.as_char().to_digit(10) {
-                            None => {
-                                if pos == 0 {
-                                    return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit)));
-                                } else {
-                                    return Ok((i.take_from(pos), value));
-                                }
-                            },
-                            Some(d) => match value.checked_mul(10).and_then(|v| v.checked_sub(d as $t)) {
-                                None => return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit))),
-                                Some(v) => {
-                                  pos += c.len();
-                                  value = v;
-                                },
-                            }
-                        }
-                    }
-                }
-
-                Err(Err::Incomplete(Needed::new(1)))
+              }
             }
-        )+
-    }
+          } else {
+            let mut pos = 0;
+            for c in i.iter_elements() {
+              match c.as_char().to_digit(10) {
+                None => {
+                  if pos == 0 {
+                    return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit)));
+                  } else {
+                    return Ok((i.take_from(pos), value));
+                  }
+                },
+                Some(d) => match value.checked_mul(10).and_then(|v| v.checked_sub(d as $t)) {
+                  None => return Err(Err::Error(E::from_error_kind(input, ErrorKind::Digit))),
+                  Some(v) => {
+                    pos += c.len();
+                    value = v;
+                  },
+                }
+              }
+            }
+          }
+          Err(Err::Incomplete(Needed::new(1)))
+        }
+      )+
+  }
 }
 
 ints! { i8 i16 i32 i64 i128 isize }
 
 #[doc(hidden)]
 macro_rules! uints {
-    ($($t:tt)+) => {
-        $(
-        /// will parse a number in text form to a number
-        ///
-        /// *Complete version*: can parse until the end of input.
-        pub fn $t<T, E: ParseError<T>>(input: T) -> IResult<T, $t, E>
-            where
-            T: Input ,
-            <T as Input>::Item: AsChar,
-            {
-                let i = input;
-
-                if i.input_len() == 0 {
-                    return Err(Err::Incomplete(Needed::new(1)));
-                }
-
-                let mut value: $t = 0;
-                let mut pos = 0;
-                for c in i.iter_elements() {
-                    match c.as_char().to_digit(10) {
-                        None => {
-                            if pos == 0 {
-                                return Err(Err::Error(E::from_error_kind(i, ErrorKind::Digit)));
-                            } else {
-                                return Ok((i.take_from(pos), value));
-                            }
-                        },
-                        Some(d) => match value.checked_mul(10).and_then(|v| v.checked_add(d as $t)) {
-                            None => return Err(Err::Error(E::from_error_kind(i, ErrorKind::Digit))),
-                            Some(v) => {
-                              pos += c.len();
-                              value = v;
-                            },
-                        }
-                    }
-                }
-
-                Err(Err::Incomplete(Needed::new(1)))
+  ($($t:tt)+) => {
+    $(
+      /// will parse a number in text form to a number
+      ///
+      /// *Complete version*: can parse until the end of input.
+      pub fn $t<T, E: ParseError<T>>(input: T) -> IResult<T, $t, E>
+      where
+        T: Input ,
+        <T as Input>::Item: AsChar,
+      {
+        let i = input;
+        if i.input_len() == 0 {
+          return Err(Err::Incomplete(Needed::new(1)));
+        }
+        let mut value: $t = 0;
+        let mut pos = 0;
+        for c in i.iter_elements() {
+          match c.as_char().to_digit(10) {
+            None => {
+              if pos == 0 {
+                return Err(Err::Error(E::from_error_kind(i, ErrorKind::Digit)));
+              } else {
+                return Ok((i.take_from(pos), value));
+              }
+            },
+            Some(d) => match value.checked_mul(10).and_then(|v| v.checked_add(d as $t)) {
+              None => return Err(Err::Error(E::from_error_kind(i, ErrorKind::Digit))),
+              Some(v) => {
+                pos += c.len();
+                value = v;
+              },
             }
-        )+
-    }
+          }
+        }
+        Err(Err::Incomplete(Needed::new(1)))
+      }
+    )+
+  }
 }
 
 uints! { u8 u16 u32 u64 u128 usize }

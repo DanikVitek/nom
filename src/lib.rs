@@ -5,7 +5,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```
 //! use nom::{
 //!   IResult,
 //!   Parser,
@@ -86,7 +86,7 @@
 //!
 //! Here is an example of one such parser, to recognize text between parentheses:
 //!
-//! ```rust
+//! ```
 //! use nom::{
 //!   IResult,
 //!   Parser,
@@ -107,7 +107,7 @@
 //!
 //! Here is another parser, written without using nom's combinators this time:
 //!
-//! ```rust
+//! ```
 //! use nom::{IResult, Err, Needed};
 //!
 //! # fn main() {
@@ -128,7 +128,7 @@
 //!
 //! With functions, you would write it like this:
 //!
-//! ```rust
+//! ```
 //! use nom::{IResult, bytes::streaming::take};
 //! fn take4(input: &str) -> IResult<&str, &str> {
 //!   take(4u8)(input)
@@ -138,19 +138,19 @@
 //! A parser in nom is a function which, for an input type `I`, an output type `O`
 //! and an optional error type `E`, will have the following signature:
 //!
-//! ```rust,compile_fail
+//! ```compile_fail
 //! fn parser(input: I) -> IResult<I, O, E>;
 //! ```
 //!
 //! Or like this, if you don't want to specify a custom error type (it will be `(I, ErrorKind)` by default):
 //!
-//! ```rust,compile_fail
+//! ```compile_fail
 //! fn parser(input: I) -> IResult<I, O>;
 //! ```
 //!
 //! [`IResult`] is an alias for the [`Result`] type:
 //!
-//! ```rust
+//! ```
 //! use nom::{Needed, error::Error};
 //!
 //! type IResult<I, O, E = Error<I>> = Result<(I, O), Err<E>>;
@@ -183,7 +183,7 @@
 //!
 //! Here are some examples:
 //!
-//! ```rust
+//! ```
 //! use nom::IResult;
 //! use nom::bytes::complete::{tag, take};
 //! fn abcd_parser(i: &str) -> IResult<&str, &str> {
@@ -201,7 +201,7 @@
 //! provides a choice between multiple parsers. If one branch fails, it tries
 //! the next, and returns the result of the first parser that succeeds:
 //!
-//! ```rust
+//! ```
 //! use nom::{IResult, Parser};
 //! use nom::branch::alt;
 //! use nom::bytes::complete::tag;
@@ -216,7 +216,7 @@
 //! The [`opt`](crate::combinator::opt) combinator makes a parser optional. If the child parser returns
 //! an error, [`opt`](crate::combinator::opt) will still succeed and return None:
 //!
-//! ```rust
+//! ```
 //! use nom::{IResult, Parser, combinator::opt, bytes::complete::tag};
 //! fn abcd_opt(i: &[u8]) -> IResult<&[u8], Option<&[u8]>> {
 //!   opt(tag("abcd")).parse(i)
@@ -228,7 +228,7 @@
 //!
 //! [`many0`](crate::multi::many0) applies a parser 0 or more times, and returns a vector of the aggregated results:
 //!
-//! ```rust
+//! ```
 //! # #[cfg(feature = "alloc")]
 //! # fn main() {
 //! use nom::{IResult, Parser, multi::many0, bytes::complete::tag};
@@ -260,7 +260,7 @@
 //!
 //! Example with a tuple of parsers:
 //!
-//! ```rust
+//! ```
 //! # fn main() {
 //! use nom::{
 //!   error::ErrorKind,
@@ -287,7 +287,7 @@
 //! But you can also use a sequence of combinators written in imperative style,
 //! thanks to the `?` operator:
 //!
-//! ```rust
+//! ```
 //! # fn main() {
 //! use nom::{IResult, bytes::complete::tag};
 //!
@@ -330,7 +330,7 @@
 //!
 //! Here is how it works in practice:
 //!
-//! ```rust
+//! ```
 //! use nom::{IResult, Err, Needed, error::{Error, ErrorKind}, bytes, character};
 //!
 //! fn take_streaming(i: &[u8]) -> IResult<&[u8], &[u8]> {

@@ -473,14 +473,15 @@ macro_rules! error_node_position(
 ///
 /// It also displays the input in hexdump format
 ///
-/// ```rust
+/// # Example
+/// ```
 /// use nom::{IResult, error::dbg_dmp, bytes::complete::tag};
 ///
 /// fn f(i: &[u8]) -> IResult<&[u8], &[u8]> {
 ///   dbg_dmp(tag("abcd"), "tag")(i)
 /// }
 ///
-///   let a = &b"efghijkl"[..];
+/// let a = &b"efghijkl"[..];
 ///
 /// // Will print the following message:
 /// // Error(Position(0, [101, 102, 103, 104, 105, 106, 107, 108])) at l.5 by ' tag ! ( "abcd" ) '
@@ -489,12 +490,12 @@ macro_rules! error_node_position(
 /// ```
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "std")))]
-pub fn dbg_dmp<'a, F, O, E: std::fmt::Debug>(
-  f: F,
+pub fn dbg_dmp<'a, F, O, E: fmt::Debug>(
+  mut f: F,
   context: &'static str,
-) -> impl Fn(&'a [u8]) -> IResult<&'a [u8], O, E>
+) -> impl FnMut(&'a [u8]) -> IResult<&'a [u8], O, E>
 where
-  F: Fn(&'a [u8]) -> IResult<&'a [u8], O, E>,
+  F: FnMut(&'a [u8]) -> IResult<&'a [u8], O, E>,
 {
   use crate::HexDisplay;
   move |i: &'a [u8]| match f(i) {

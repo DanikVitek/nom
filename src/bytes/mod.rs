@@ -1,5 +1,7 @@
 //! Parsers recognizing byte streams
 
+// FIXME: all doc tests must refer to the parsers from this module -- not from `complete` or `streaming`!
+
 pub mod complete;
 pub mod streaming;
 #[cfg(test)]
@@ -23,7 +25,7 @@ use crate::{
 /// the input that matches the argument.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::tag;
 ///
@@ -39,7 +41,7 @@ use crate::{
 pub fn tag<T, I, Error: ParseError<I>>(tag: T) -> Tag<T, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
   Tag {
     tag,
@@ -56,7 +58,7 @@ pub struct Tag<T, E> {
 impl<I, Error: ParseError<I>, T> Parser<I> for Tag<T, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
   type Output = I;
 
@@ -92,7 +94,7 @@ where
 /// the input that matches the argument with no regard to case.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::tag_no_case;
 ///
@@ -109,7 +111,7 @@ where
 pub fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> TagNoCase<T, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
   TagNoCase {
     tag,
@@ -126,7 +128,7 @@ pub struct TagNoCase<T, E> {
 impl<I, Error: ParseError<I>, T> Parser<I> for TagNoCase<T, Error>
 where
   I: Input + Compare<T>,
-  T: Input + Clone,
+  T: Input,
 {
   type Output = I;
 
@@ -187,7 +189,7 @@ where
 /// It will return a `Err::Error(("", ErrorKind::IsNot))` if the pattern wasn't met.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::is_not;
 ///
@@ -240,7 +242,7 @@ where
 /// It will return a `Err(Err::Error((_, ErrorKind::IsA)))` if the pattern wasn't met.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::complete::is_a;
 ///
@@ -292,7 +294,7 @@ where
 /// takes the input and returns a bool)*.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::complete::take_while;
 /// use nom::AsChar;
@@ -349,7 +351,7 @@ where
 /// *Streaming version* will return a `Err::Incomplete(Needed::new(1))` or if the pattern reaches the end of the input.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_while1;
 /// use nom::AsChar;
@@ -406,7 +408,7 @@ where
 /// if the pattern reaches the end of the input or is too short.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_while_m_n;
 /// use nom::AsChar;
@@ -509,7 +511,7 @@ where
 /// takes the input and returns a bool)*.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::complete::take_till;
 ///
@@ -543,8 +545,7 @@ where
 /// end of input or if there was no match.
 ///
 /// # Example
-///
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_till1;
 ///
@@ -600,7 +601,7 @@ where
 /// the next few chars, so the result will be `Err::Incomplete(Needed::Unknown)`
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::take;
 ///
@@ -657,7 +658,7 @@ where
 /// contain the pattern or if the input is smaller than the pattern.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// use nom::bytes::streaming::take_until;
 ///
@@ -716,7 +717,7 @@ where
 /// contain the pattern or if the input is smaller than the pattern.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// # use nom::{Err, error::{Error, ErrorKind}, Needed, IResult};
 /// use nom::bytes::streaming::take_until1;
 ///
@@ -795,7 +796,7 @@ where
 ///
 pub fn escaped<I, Error, F, G>(normal: F, control_char: char, escapable: G) -> Escaped<F, G, Error>
 where
-  I: Input + Clone + Offset,
+  I: Input + Offset,
   <I as Input>::Item: AsChar,
   F: Parser<I, Error = Error>,
   G: Parser<I, Error = Error>,
@@ -819,7 +820,7 @@ pub struct Escaped<F, G, E> {
 
 impl<I, Error: ParseError<I>, F, G> Parser<I> for Escaped<F, G, Error>
 where
-  I: Input + Clone + Offset,
+  I: Input + Offset,
   <I as Input>::Item: AsChar,
   F: Parser<I, Error = Error>,
   G: Parser<I, Error = Error>,
@@ -940,6 +941,7 @@ where
 ///
 /// As an example, the chain `abc\tdef` could be `abc    def` (it also consumes the control character)
 ///
+/// # Example
 /// ```
 /// # use nom::{Err, error::ErrorKind, Needed, IResult};
 /// # use std::str::from_utf8;
