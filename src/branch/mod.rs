@@ -113,7 +113,8 @@ macro_rules! alt_trait(
   );
 );
 
-/// Wrapping structure for the [alt()] combinator implementation
+/// Wrapping structure for the [`alt`] combinator implementation
+#[derive(Clone, Copy)]
 pub struct Choice<T> {
   parser: T,
 }
@@ -274,11 +275,21 @@ macro_rules! permutation_trait(
   );
 );
 
-/// Wrapping structure for the [permutation] combinator implementation
+/// Wrapping structure for the [`permutation`] combinator implementation
 pub struct Permutation<T, Error> {
   parser: T,
   e: PhantomData<Error>,
 }
+
+impl<T: Clone, E> Clone for Permutation<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      parser: self.parser.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for Permutation<T, E> {}
 
 macro_rules! permutation_trait_impl(
   ($($name:ident $ty:ident $item:ident),+) => (

@@ -269,6 +269,7 @@ pub trait Mode {
 }
 
 /// Produces a value. This is the default behavior for parsers
+#[derive(Clone, Copy)]
 pub struct Emit;
 impl Mode for Emit {
   type Output<T> = T;
@@ -299,6 +300,7 @@ impl Mode for Emit {
 /// parser memory usage. Some combinators check for an error in a child parser but
 /// discard the error, and for those, using `Check` makes sure the error is not
 /// even generated, only the fact that an error happened remains
+#[derive(Clone, Copy)]
 pub struct Check;
 impl Mode for Check {
   type Output<T> = ();
@@ -371,6 +373,7 @@ pub trait IsStreaming {
 }
 
 /// Indicates that the input data is streaming: more data may be available later
+#[derive(Clone, Copy)]
 pub struct Streaming;
 
 impl IsStreaming for Streaming {
@@ -385,6 +388,7 @@ impl IsStreaming for Streaming {
 }
 
 /// Indicates that the input data is complete: no more data may be added later
+#[derive(Clone, Copy)]
 pub struct Complete;
 
 impl IsStreaming for Complete {
@@ -400,11 +404,18 @@ impl IsStreaming for Complete {
 
 /// Holds the parser execution modifiers: output [`Mode`], error [`Mode`] and
 /// streaming behavior for input data
-pub struct OutputM<M: Mode, EM: Mode, S: IsStreaming> {
+pub struct OutputM<M, EM, S> {
   m: PhantomData<M>,
   em: PhantomData<EM>,
   s: PhantomData<S>,
 }
+
+impl<M, EM, S> Clone for OutputM<M, EM, S> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<M, EM, S> Copy for OutputM<M, EM, S> {}
 
 impl<M: Mode, EM: Mode, S: IsStreaming> OutputMode for OutputM<M, EM, S> {
   type Output = M;
@@ -591,6 +602,7 @@ impl<I, O, E: ParseError<I>> Parser<I> for Box<dyn Parser<I, Output = O, Error =
 */
 
 /// Implementation of [`Parser::map`]
+#[derive(Clone, Copy)]
 pub struct Map<F, G> {
   f: F,
   g: G,
@@ -612,6 +624,7 @@ impl<I, O2, E: ParseError<I>, F: Parser<I, Error = E>, G: FnMut(<F as Parser<I>>
 }
 
 /// Implementation of [`Parser::map_res`]
+#[derive(Clone, Copy)]
 pub struct MapRes<F, G> {
   f: F,
   g: G,
@@ -642,6 +655,7 @@ where
 }
 
 /// Implementation of [`Parser::map_opt`]
+#[derive(Clone, Copy)]
 pub struct MapOpt<F, G> {
   f: F,
   g: G,
@@ -671,6 +685,7 @@ where
 }
 
 /// Implementation of [`Parser::flat_map`]
+#[derive(Clone, Copy)]
 pub struct FlatMap<F, G> {
   f: F,
   g: G,
@@ -697,6 +712,7 @@ impl<
 }
 
 /// Implementation of [`Parser::and_then`]
+#[derive(Clone, Copy)]
 pub struct AndThen<F, G> {
   f: F,
   g: G,
@@ -719,6 +735,7 @@ impl<I, F: Parser<I>, G: Parser<<F as Parser<I>>::Output, Error = <F as Parser<I
 }
 
 /// Implementation of [`Parser::and`]
+#[derive(Clone, Copy)]
 pub struct And<F, G> {
   f: F,
   g: G,
@@ -740,6 +757,7 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
 }
 
 /// Implementation of [`Parser::or`]
+#[derive(Clone, Copy)]
 pub struct Or<F, G> {
   f: F,
   g: G,
@@ -768,6 +786,7 @@ impl<
 }
 
 /// Implementation of [`Parser::into`]
+#[derive(Clone, Copy)]
 pub struct Into<F, O2, E2> {
   f: F,
   phantom_out2: PhantomData<O2>,
@@ -795,6 +814,7 @@ impl<
 }
 
 /// Alternate between two Parser implementations with the same result type.
+#[derive(Clone, Copy)]
 pub enum Either<F, G> {
   /// The left variant, corresponding to type [`F`]
   Left(F),

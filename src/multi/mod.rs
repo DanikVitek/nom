@@ -13,13 +13,13 @@ use crate::lib::std::num::NonZeroUsize;
 #[cfg(feature = "alloc")]
 use crate::lib::std::vec::Vec;
 use crate::traits::ToUsize;
-use crate::Emit;
 use crate::Input;
 use crate::Mode;
 use crate::NomRange;
 use crate::OutputM;
 use crate::OutputMode;
 use crate::{Check, FlatMap};
+use crate::{Emit, PResult};
 
 /// Don't pre-allocate more than 64KiB when calling `Vec::with_capacity`.
 ///
@@ -69,8 +69,9 @@ where
   Many0 { parser: f }
 }
 
+/// Parser implementation for the [`many0`] combinator
 #[cfg(feature = "alloc")]
-/// Parser implementation for the [many0] combinator
+#[derive(Clone, Copy)]
 pub struct Many0<F> {
   parser: F,
 }
@@ -84,10 +85,7 @@ where
   type Output = Vec<<F as Parser<I>>::Output>;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut i: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut acc = OM::Output::bind(|| Vec::with_capacity(4));
     loop {
       let len = i.input_len();
@@ -156,8 +154,9 @@ where
   Many1 { parser }
 }
 
-#[cfg(feature = "alloc")]
 /// Parser implementation for the [`many1`] combinator
+#[cfg(feature = "alloc")]
+#[derive(Clone, Copy)]
 pub struct Many1<F> {
   parser: F,
 }
@@ -171,10 +170,7 @@ where
   type Output = Vec<<F as Parser<I>>::Output>;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut i: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     match self
       .parser
       .process::<OutputM<OM::Output, Emit, OM::Incomplete>>(i.clone())
@@ -262,13 +258,24 @@ where
   }
 }
 
-#[cfg(feature = "alloc")]
 /// Parser implementation for the [`many_till`] combinator
+#[cfg(feature = "alloc")]
 pub struct ManyTill<F, G, E> {
   f: F,
   g: G,
   e: PhantomData<E>,
 }
+
+impl<F: Clone, G: Clone, E> Clone for ManyTill<F, G, E> {
+  fn clone(&self) -> Self {
+    Self {
+      f: self.f.clone(),
+      g: self.g.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, E> Copy for ManyTill<F, G, E> {}
 
 #[cfg(feature = "alloc")]
 impl<I, F, G, E> Parser<I> for ManyTill<F, G, E>
@@ -281,10 +288,7 @@ where
   type Output = (Vec<<F as Parser<I>>::Output>, <G as Parser<I>>::Output);
   type Error = E;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut i: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut res = OM::Output::bind(Vec::new);
     loop {
       let len = i.input_len();
@@ -366,8 +370,9 @@ where
   }
 }
 
-#[cfg(feature = "alloc")]
 /// Parser implementation for the [`separated_list0`] combinator
+#[cfg(feature = "alloc")]
+#[derive(Clone, Copy)]
 pub struct SeparatedList0<F, G> {
   parser: F,
   separator: G,
@@ -383,10 +388,7 @@ where
   type Output = Vec<<F as Parser<I>>::Output>;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut i: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut res = OM::Output::bind(Vec::new);
 
     match self
@@ -483,8 +485,9 @@ where
   SeparatedList1 { parser, separator }
 }
 
-#[cfg(feature = "alloc")]
 /// Parser implementation for the [`separated_list1`] combinator
+#[cfg(feature = "alloc")]
+#[derive(Clone, Copy)]
 pub struct SeparatedList1<F, G> {
   parser: F,
   separator: G,
@@ -500,10 +503,7 @@ where
   type Output = Vec<<F as Parser<I>>::Output>;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut i: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut res = OM::Output::bind(Vec::new);
 
     match self.parser.process::<OM>(i.clone()) {
@@ -597,8 +597,9 @@ where
   ManyMN { parser, min, max }
 }
 
-#[cfg(feature = "alloc")]
 /// Parser implementation for the [`many_m_n`] combinator
+#[cfg(feature = "alloc")]
+#[derive(Clone, Copy)]
 pub struct ManyMN<F> {
   parser: F,
   min: usize,
@@ -614,10 +615,7 @@ where
   type Output = Vec<<F as Parser<I>>::Output>;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     if self.min > self.max {
       return Err(Err::Failure(<F as Parser<I>>::Error::from_error_kind(
         input,
@@ -700,6 +698,7 @@ where
 }
 
 /// Parser implementation for the [`many0_count`] combinator
+#[derive(Clone, Copy)]
 pub struct Many0Count<F> {
   parser: F,
 }
@@ -712,10 +711,7 @@ where
   type Output = usize;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut count = 0;
 
     loop {
@@ -782,6 +778,7 @@ where
 }
 
 /// Parser implementation for the [`many1_count`] combinator
+#[derive(Clone, Copy)]
 pub struct Many1Count<F> {
   parser: F,
 }
@@ -794,10 +791,7 @@ where
   type Output = usize;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut count = 0;
 
     match self
@@ -873,8 +867,9 @@ where
   Count { parser, count }
 }
 
-#[cfg(feature = "alloc")]
 /// Parser implementation for the [`count`] combinator
+#[cfg(feature = "alloc")]
+#[derive(Clone, Copy)]
 pub struct Count<F> {
   parser: F,
   count: usize,
@@ -889,7 +884,7 @@ where
   type Output = Vec<<F as Parser<I>>::Output>;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(&mut self, i: I) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut input = i.clone();
     let max_initial_capacity =
       MAX_INITIAL_CAPACITY_BYTES / size_of::<<F as Parser<I>>::Output>().max(1);
@@ -958,7 +953,7 @@ where
   Fill { parser, buf }
 }
 
-/// Parser implementation for the [fill] combinator
+/// Parser implementation for the [`fill`] combinator
 pub struct Fill<'a, F, O> {
   parser: F,
   buf: &'a mut [O],
@@ -972,7 +967,7 @@ where
   type Output = ();
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(&mut self, i: I) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut input = i.clone();
 
     for elem in self.buf.iter_mut() {
@@ -994,6 +989,20 @@ where
     }
 
     Ok((input, OM::Output::bind(|| ())))
+  }
+}
+
+impl<I, F, O> Parser<I> for &mut Fill<'_, F, O>
+where
+  I: Clone,
+  F: Parser<I, Output = O>,
+{
+  type Output = ();
+  type Error = <F as Parser<I>>::Error;
+
+  #[inline(always)]
+  fn process<OM: OutputMode>(&mut self, input: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    (**self).process::<OM>(input)
   }
 }
 
@@ -1057,6 +1066,18 @@ pub struct FoldMany0<F, G, Init, R> {
   r: PhantomData<R>,
 }
 
+impl<F: Clone, G: Clone, Init: Clone, R> Clone for FoldMany0<F, G, Init, R> {
+  fn clone(&self) -> Self {
+    Self {
+      parser: self.parser.clone(),
+      g: self.g.clone(),
+      init: self.init.clone(),
+      r: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, Init: Copy, R> Copy for FoldMany0<F, G, Init, R> {}
+
 impl<I, F, G, Init, R> Parser<I> for FoldMany0<F, G, Init, R>
 where
   I: Clone + Input,
@@ -1067,7 +1088,7 @@ where
   type Output = R;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(&mut self, i: I) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut res = OM::Output::bind(|| (self.init)());
     let mut input = i;
 
@@ -1158,6 +1179,18 @@ pub struct FoldMany1<F, G, Init, R> {
   r: PhantomData<R>,
 }
 
+impl<F: Clone, G: Clone, Init: Clone, R> Clone for FoldMany1<F, G, Init, R> {
+  fn clone(&self) -> Self {
+    Self {
+      parser: self.parser.clone(),
+      g: self.g.clone(),
+      init: self.init.clone(),
+      r: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, Init: Copy, R> Copy for FoldMany1<F, G, Init, R> {}
+
 impl<I, F, G, Init, R> Parser<I> for FoldMany1<F, G, Init, R>
 where
   I: Clone + Input,
@@ -1168,7 +1201,7 @@ where
   type Output = R;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(&mut self, i: I) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let mut res = OM::Output::bind(|| (self.init)());
     let input = i.clone();
 
@@ -1285,6 +1318,20 @@ pub struct FoldManyMN<F, G, Init, R> {
   max: usize,
 }
 
+impl<F: Clone, G: Clone, Init: Clone, R> Clone for FoldManyMN<F, G, Init, R> {
+  fn clone(&self) -> Self {
+    Self {
+      parser: self.parser.clone(),
+      g: self.g.clone(),
+      init: self.init.clone(),
+      r: PhantomData,
+      min: self.min,
+      max: self.max,
+    }
+  }
+}
+impl<F: Copy, G: Copy, Init: Copy, R> Copy for FoldManyMN<F, G, Init, R> {}
+
 impl<I, F, G, Init, R> Parser<I> for FoldManyMN<F, G, Init, R>
 where
   I: Clone + Input,
@@ -1295,10 +1342,7 @@ where
   type Output = R;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     if self.min > self.max {
       return Err(Err::Error(OM::Error::bind(|| {
         <F as Parser<I>>::Error::from_error_kind(input, ErrorKind::ManyMN)
@@ -1415,6 +1459,17 @@ pub struct LengthValue<F, G, E> {
   e: PhantomData<E>,
 }
 
+impl<F: Clone, G: Clone, E> Clone for LengthValue<F, G, E> {
+  fn clone(&self) -> Self {
+    Self {
+      length: self.length.clone(),
+      parser: self.parser.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, E> Copy for LengthValue<F, G, E> {}
+
 impl<I, F, G, E> Parser<I> for LengthValue<F, G, E>
 where
   I: Clone + Input,
@@ -1426,10 +1481,7 @@ where
   type Output = <G as Parser<I>>::Output;
   type Error = E;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let (i, length) = self
       .length
       .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(input)?;
@@ -1503,6 +1555,17 @@ pub struct LengthCount<F, G, E> {
   e: PhantomData<E>,
 }
 
+impl<F: Clone, G: Clone, E> Clone for LengthCount<F, G, E> {
+  fn clone(&self) -> Self {
+    Self {
+      length: self.length.clone(),
+      parser: self.parser.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, E> Copy for LengthCount<F, G, E> {}
+
 #[cfg(feature = "alloc")]
 impl<I, F, G, E> Parser<I> for LengthCount<F, G, E>
 where
@@ -1515,10 +1578,7 @@ where
   type Output = Vec<<G as Parser<I>>::Output>;
   type Error = E;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     match self
       .length
       .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(input)
@@ -1665,6 +1725,17 @@ pub struct Many<F, R, Collection> {
   c: PhantomData<Collection>,
 }
 
+impl<F: Clone, R: Clone, Collection> Clone for Many<F, R, Collection> {
+  fn clone(&self) -> Self {
+    Self {
+      parser: self.parser.clone(),
+      range: self.range.clone(),
+      c: PhantomData,
+    }
+  }
+}
+impl<F: Copy, R: Copy, Collection> Copy for Many<F, R, Collection> {}
+
 impl<I, F, R, Collection> Parser<I> for Many<F, R, Collection>
 where
   I: Clone + Input,
@@ -1675,10 +1746,7 @@ where
   type Output = Collection;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     if self.range.is_inverted() {
       return Err(Err::Failure(<F as Parser<I>>::Error::from_error_kind(
         input,
@@ -1778,6 +1846,7 @@ where
 }
 
 /// Parser implementation for the [`fold`] combinator
+#[derive(Clone, Copy)]
 pub struct Fold<F, G, H, Range> {
   parser: F,
   init: H,
@@ -1796,10 +1865,7 @@ where
   type Output = Res;
   type Error = <F as Parser<I>>::Error;
 
-  fn process<OM: OutputMode>(
-    &mut self,
-    mut input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, mut input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     if self.range.is_inverted() {
       return Err(Err::Failure(<F as Parser<I>>::Error::from_error_kind(
         input,

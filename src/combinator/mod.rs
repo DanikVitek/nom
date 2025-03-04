@@ -207,6 +207,7 @@ where
 }
 
 /// Parser implementation for [`opt`]
+#[derive(Clone, Copy)]
 pub struct Opt<F> {
   parser: F,
 }
@@ -262,6 +263,7 @@ where
 }
 
 /// Parser implementation for [`cond`]
+#[derive(Clone, Copy)]
 pub struct Cond<F> {
   parser: Option<F>,
 }
@@ -305,6 +307,7 @@ where
 }
 
 /// Parser implementation for [`peek`]
+#[derive(Clone, Copy)]
 pub struct Peek<F> {
   parser: F,
 }
@@ -373,6 +376,7 @@ where
 }
 
 /// Parser implementation for [`complete`]
+#[derive(Clone, Copy)]
 pub struct MakeComplete<F> {
   parser: F,
 }
@@ -425,6 +429,7 @@ where
 }
 
 /// Parser implementation for [`all_consuming`]
+#[derive(Clone, Copy)]
 pub struct AllConsuming<F> {
   parser: F,
 }
@@ -488,6 +493,18 @@ pub struct Verify<F, G, O2: ?Sized> {
   o2: PhantomData<O2>,
 }
 
+impl<F: Clone, G: Clone, O2: ?Sized> Clone for Verify<F, G, O2> {
+  fn clone(&self) -> Self {
+    Self {
+      first: self.first.clone(),
+      second: self.second.clone(),
+      o2: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, O2: ?Sized> Copy for Verify<F, G, O2> {}
+
+
 impl<I, F: Parser<I>, G, O2> Parser<I> for Verify<F, G, O2>
 where
   I: Clone,
@@ -537,6 +554,7 @@ where
 }
 
 /// Parser implementation for [`value`]
+#[derive(Clone, Copy)]
 pub struct Value<T, F> {
   val: T,
   parser: F,
@@ -583,6 +601,7 @@ where
 }
 
 /// Parser implementation for [`not`]
+#[derive(Clone, Copy)]
 pub struct Not<F> {
   parser: F,
 }
@@ -630,6 +649,7 @@ where
 }
 
 /// Parser implementation for [`recognize`]
+#[derive(Clone, Copy)]
 pub struct Recognize<F> {
   parser: F,
 }
@@ -704,6 +724,7 @@ where
 }
 
 /// Parser implementation for [`consumed`]
+#[derive(Clone, Copy)]
 pub struct Consumed<F> {
   parser: F,
 }
@@ -795,6 +816,7 @@ where
 }
 
 /// Parser implementation for [`cut`]
+#[derive(Clone, Copy)]
 pub struct Cut<F> {
   parser: F,
 }
@@ -975,10 +997,21 @@ pub fn success<I, O: Clone, E: ParseError<I>>(val: O) -> Success<O, E> {
 }
 
 /// Parser implementation for [`success`]
-pub struct Success<O: Clone, E> {
+pub struct Success<O, E> {
   val: O,
   e: PhantomData<E>,
 }
+
+impl<O: Clone, E> Clone for Success<O, E> {
+  fn clone(&self) -> Self {
+    Self {
+      val: self.val.clone(),
+      e: PhantomData,
+    }
+  }
+}
+
+impl<O: Copy, E> Copy for Success<O, E> {}
 
 impl<I, O, E> Parser<I> for Success<O, E>
 where
@@ -1014,6 +1047,11 @@ pub struct Fail<O, E> {
   o: PhantomData<O>,
   e: PhantomData<E>,
 }
+
+impl<O, E> Clone for Fail<O, E> {
+  fn clone(&self) -> Self { *self }
+}
+impl<O, E> Copy for Fail<O, E> {}
 
 impl<I, O, E> Parser<I> for Fail<O, E>
 where

@@ -56,6 +56,13 @@ pub struct BeUint<Uint, E> {
   u: PhantomData<Uint>,
 }
 
+impl<T, E> Clone for BeUint<T, E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<T, E> Copy for BeUint<T, E> {}
+
 impl<I, Uint, E: ParseError<I>> Parser<I> for BeUint<Uint, E>
 where
   I: Input<Item = u8>,
@@ -131,6 +138,13 @@ pub struct BeInt<Int, E> {
   e: PhantomData<E>,
   u: PhantomData<Int>,
 }
+
+impl<T, E> Clone for BeInt<T, E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<T, E> Copy for BeInt<T, E> {}
 
 impl<I, Int, E: ParseError<I>> Parser<I> for BeInt<Int, E>
 where
@@ -477,6 +491,13 @@ pub struct LeUint<Uint, E> {
   u: PhantomData<Uint>,
 }
 
+impl<T, E> Clone for LeUint<T, E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<T, E> Copy for LeUint<T, E> {}
+
 impl<I, Uint, E: ParseError<I>> Parser<I> for LeUint<Uint, E>
 where
   I: Input<Item = u8>,
@@ -548,6 +569,13 @@ pub struct LeInt<Int, E> {
   u: PhantomData<Int>,
 }
 
+impl<T, E> Clone for LeInt<T, E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<T, E> Copy for LeInt<T, E> {}
+
 impl<I, Int, E: ParseError<I>> Parser<I> for LeInt<Int, E>
 where
   I: Input<Item = u8>,
@@ -566,10 +594,7 @@ where
   type Error = E;
 
   #[inline(always)]
-  fn process<OM: crate::OutputMode>(
-    &mut self,
-    input: I,
-  ) -> crate::PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     if input.input_len() < self.bound {
       if OM::Incomplete::is_streaming() {
         Err(Err::Incomplete(Needed::new(self.bound - input.input_len())))
@@ -1337,6 +1362,13 @@ where
 /// Parser for big endian 4-byte floating point numbers.
 pub struct BeFloat<Uint, E>(BeUint<Uint, E>);
 
+impl<T, E> Clone for BeFloat<T, E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<T, E> Copy for BeFloat<T, E> {}
+
 impl<I, E, Uint> Parser<I> for BeFloat<Uint, E>
 where
   I: Input<Item = u8>,
@@ -1402,6 +1434,13 @@ where
 
 /// Parser for big endian 4-byte floating point numbers.
 pub struct LeFloat<Uint, E>(LeUint<Uint, E>);
+
+impl<T, E> Clone for LeFloat<T, E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<T, E> Copy for LeFloat<T, E> {}
 
 impl<I, E, Uint> Parser<I> for LeFloat<Uint, E>
 where

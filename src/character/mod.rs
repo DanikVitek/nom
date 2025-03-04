@@ -6,11 +6,11 @@
 
 use core::marker::PhantomData;
 
-use crate::error::ErrorKind;
-use crate::FindToken;
-use crate::IsStreaming;
-use crate::Mode;
-use crate::{error::ParseError, AsChar, Err, Input, Needed, Parser};
+use crate::{
+  error::{ErrorKind, ParseError},
+  AsChar, Err, Input, Needed, Parser,
+};
+use crate::{FindToken, IsStreaming, Mode};
 
 #[cfg(test)]
 mod tests;
@@ -111,6 +111,13 @@ pub struct Char<E> {
   e: PhantomData<E>,
 }
 
+impl<E> Clone for Char<E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<E> Copy for Char<E> {}
+
 impl<I, Error: ParseError<I>> Parser<I> for Char<Error>
 where
   I: Input,
@@ -171,6 +178,16 @@ pub struct Satisfy<F, E> {
   predicate: F,
   error: PhantomData<E>,
 }
+
+impl<F: Clone, E> Clone for Satisfy<F, E> {
+  fn clone(&self) -> Self {
+    Self {
+      predicate: self.predicate.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<F: Copy, E> Copy for Satisfy<F, E> {}
 
 impl<I, Error: ParseError<I>, F> Parser<I> for Satisfy<F, Error>
 where
@@ -252,6 +269,16 @@ pub struct OneOf<T, E> {
   error: PhantomData<E>,
 }
 
+impl<T: Clone, E> Clone for OneOf<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      list: self.list.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for OneOf<T, E> {}
+
 impl<I, T, Error: ParseError<I>> Parser<I> for OneOf<T, Error>
 where
   I: Input,
@@ -303,6 +330,16 @@ pub struct NoneOf<T, E> {
   error: PhantomData<E>,
 }
 
+impl<T: Clone, E> Clone for NoneOf<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      list: self.list.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for NoneOf<T, E> {}
+
 impl<I, T, Error: ParseError<I>> Parser<I> for NoneOf<T, Error>
 where
   I: Input,
@@ -338,7 +375,7 @@ where
 /// fn parser_streaming(input: &str) -> IResult<&str, char> {
 ///     anychar().parse(input)
 /// }
-/// 
+///
 /// assert_eq!(parser_complete("abc"), Ok(("bc",'a')));
 /// assert_eq!(parser_complete(""), Err(Err::Error(Error::new("", ErrorKind::Eof))));
 ///
@@ -353,10 +390,17 @@ where
   AnyChar { e: PhantomData }
 }
 
-/// Parser implementation for char
+/// Parser implementation for [`anychar`]
 pub struct AnyChar<E> {
   e: PhantomData<E>,
 }
+
+impl<E> Clone for AnyChar<E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<E> Copy for AnyChar<E> {}
 
 impl<I, Error: ParseError<I>> Parser<I> for AnyChar<Error>
 where
@@ -411,6 +455,13 @@ pub struct Digit1<E> {
   e: PhantomData<E>,
 }
 
+impl<E> Clone for Digit1<E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<E> Copy for Digit1<E> {}
+
 impl<I: Input, E: ParseError<I>> Parser<I> for Digit1<E>
 where
   <I as Input>::Item: AsChar,
@@ -458,6 +509,13 @@ where
 pub struct MultiSpace0<E> {
   e: PhantomData<E>,
 }
+
+impl<E> Clone for MultiSpace0<E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<E> Copy for MultiSpace0<E> {}
 
 impl<I, Error: ParseError<I>> Parser<I> for MultiSpace0<Error>
 where

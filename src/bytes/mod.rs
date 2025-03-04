@@ -55,6 +55,16 @@ pub struct Tag<T, E> {
   e: PhantomData<E>,
 }
 
+impl<T: Clone, E> Clone for Tag<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      tag: self.tag.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for Tag<T, E> {}
+
 impl<I, Error: ParseError<I>, T> Parser<I> for Tag<T, Error>
 where
   I: Input + Compare<T>,
@@ -125,6 +135,16 @@ pub struct TagNoCase<T, E> {
   e: PhantomData<E>,
 }
 
+impl<T: Clone, E> Clone for TagNoCase<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      tag: self.tag.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for TagNoCase<T, E> {}
+
 impl<I, Error: ParseError<I>, T> Parser<I> for TagNoCase<T, Error>
 where
   I: Input + Compare<T>,
@@ -163,6 +183,16 @@ pub struct TakeTill<F, E> {
   predicate: F,
   error: PhantomData<E>,
 }
+
+impl<F: Clone, E> Clone for TakeTill<F, E> {
+  fn clone(&self) -> Self {
+    Self {
+      predicate: self.predicate.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<F: Copy, E> Copy for TakeTill<F, E> {}
 
 impl<I, Error: ParseError<I>, F> Parser<I> for TakeTill<F, Error>
 where
@@ -219,6 +249,16 @@ pub struct IsNot<T, E> {
   error: PhantomData<E>,
 }
 
+impl<T: Clone, E> Clone for IsNot<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      arr: self.arr.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for IsNot<T, E> {}
+
 impl<T, I, Error: ParseError<I>> Parser<I> for IsNot<T, Error>
 where
   I: Input,
@@ -273,6 +313,16 @@ pub struct IsA<T, E> {
   error: PhantomData<E>,
 }
 
+impl<T: Clone, E> Clone for IsA<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      arr: self.arr.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for IsA<T, E> {}
+
 impl<T, I, Error: ParseError<I>> Parser<I> for IsA<T, Error>
 where
   I: Input,
@@ -324,6 +374,16 @@ pub struct TakeWhile<F, E> {
   predicate_not: F,
   error: PhantomData<E>,
 }
+
+impl<F: Clone, E> Clone for TakeWhile<F, E> {
+  fn clone(&self) -> Self {
+    Self {
+      predicate_not: self.predicate_not.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<F: Copy, E> Copy for TakeWhile<F, E> {}
 
 impl<I, Error: ParseError<I>, F> Parser<I> for TakeWhile<F, Error>
 where
@@ -380,6 +440,16 @@ pub struct TakeWhile1<F, E> {
   predicate_not: F,
   error: PhantomData<E>,
 }
+
+impl<F: Clone, E> Clone for TakeWhile1<F, E> {
+  fn clone(&self) -> Self {
+    Self {
+      predicate_not: self.predicate_not.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<F: Copy, E> Copy for TakeWhile1<F, E> {}
 
 impl<I, Error: ParseError<I>, F> Parser<I> for TakeWhile1<F, Error>
 where
@@ -447,6 +517,18 @@ pub struct TakeWhileMN<F, E> {
   predicate: F,
   e: PhantomData<E>,
 }
+
+impl<F: Clone, E> Clone for TakeWhileMN<F, E> {
+  fn clone(&self) -> Self {
+    Self {
+      m: self.m,
+      n: self.n,
+      predicate: self.predicate.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<F: Copy, E> Copy for TakeWhileMN<F, E> {}
 
 impl<I, Error: ParseError<I>, F> Parser<I> for TakeWhileMN<F, Error>
 where
@@ -575,6 +657,16 @@ pub struct TakeTill1<F, E> {
   error: PhantomData<E>,
 }
 
+impl<F: Clone, E> Clone for TakeTill1<F, E> {
+  fn clone(&self) -> Self {
+    Self {
+      predicate: self.predicate.clone(),
+      error: PhantomData,
+    }
+  }
+}
+impl<F: Copy, E> Copy for TakeTill1<F, E> {}
+
 impl<I, Error: ParseError<I>, F> Parser<I> for TakeTill1<F, Error>
 where
   I: Input,
@@ -629,6 +721,13 @@ pub struct Take<E> {
   length: usize,
   e: PhantomData<E>,
 }
+
+impl<E> Clone for Take<E> {
+  fn clone(&self) -> Self {
+    *self
+  }
+}
+impl<E> Copy for Take<E> {}
 
 impl<I, Error: ParseError<I>> Parser<I> for Take<Error>
 where
@@ -687,6 +786,16 @@ pub struct TakeUntil<T, E> {
   tag: T,
   e: PhantomData<E>,
 }
+
+impl<T: Clone, E> Clone for TakeUntil<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      tag: self.tag.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for TakeUntil<T, E> {}
 
 impl<I, T, Error: ParseError<I>> Parser<I> for TakeUntil<T, Error>
 where
@@ -747,6 +856,16 @@ pub struct TakeUntil1<T, E> {
   tag: T,
   e: PhantomData<E>,
 }
+
+impl<T: Clone, E> Clone for TakeUntil1<T, E> {
+  fn clone(&self) -> Self {
+    Self {
+      tag: self.tag.clone(),
+      e: PhantomData,
+    }
+  }
+}
+impl<T: Copy, E> Copy for TakeUntil1<T, E> {}
 
 impl<I, T, Error: ParseError<I>> Parser<I> for TakeUntil1<T, Error>
 where
@@ -817,6 +936,18 @@ pub struct Escaped<F, G, E> {
   control_char: char,
   e: PhantomData<E>,
 }
+
+impl<F: Clone, G: Clone, E> Clone for Escaped<F, G, E> {
+  fn clone(&self) -> Self {
+    Self {
+      normal: self.normal.clone(),
+      escapable: self.escapable.clone(),
+      control_char: self.control_char,
+      e: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, E> Copy for Escaped<F, G, E> {}
 
 impl<I, Error: ParseError<I>, F, G> Parser<I> for Escaped<F, G, Error>
 where
@@ -1000,6 +1131,20 @@ pub struct EscapedTransform<F, G, E, ExtendItem, Output> {
   extend: PhantomData<ExtendItem>,
   o: PhantomData<Output>,
 }
+
+impl<F: Clone, G: Clone, E, ExtendItem, Output> Clone for EscapedTransform<F, G, E, ExtendItem, Output> {
+  fn clone(&self) -> Self {
+    Self {
+      normal: self.normal.clone(),
+      transform: self.transform.clone(),
+      control_char: self.control_char,
+      e: PhantomData,
+      extend: PhantomData,
+      o: PhantomData,
+    }
+  }
+}
+impl<F: Copy, G: Copy, E, ExtendItem, Output> Copy for EscapedTransform<F, G, E, ExtendItem, Output> {}
 
 impl<I, Error: ParseError<I>, F, G, ExtendItem, Output> Parser<I>
   for EscapedTransform<F, G, Error, ExtendItem, Output>

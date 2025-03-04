@@ -11,7 +11,7 @@ use crate::Input;
 
 /// Converts a byte-level input to a bit-level input, for consumption by a parser that uses bits.
 ///
-/// Afterwards, the input is converted back to a byte-level parser, with any remaining bits thrown
+/// Afterward, the input is converted back to a byte-level parser, with any remaining bits thrown
 /// away.
 ///
 /// # Example
