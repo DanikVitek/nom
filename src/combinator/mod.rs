@@ -398,11 +398,12 @@ where
 /// # }
 /// ```
 pub fn cond<I, E: ParseError<I>, F>(b: bool, f: F) -> Cond<F>
+// cannot be const
 where
   F: Parser<I, Error = E>,
 {
   Cond {
-    parser: if b { Some(f) } else { None },
+    parser: b.then_some(f),
   }
 }
 
@@ -1071,7 +1072,7 @@ impl<
 /// assert_eq!(parsed, [("abc", 3usize), ("defg", 4), ("hijkl", 5), ("mnopqr", 6)].iter().cloned().collect());
 /// assert_eq!(res, Ok(("123", ())));
 /// ```
-pub fn iterator<Input, Error, F>(input: Input, f: F) -> ParserIterator<Input, Error, F>
+pub const fn iterator<Input, Error, F>(input: Input, f: F) -> ParserIterator<Input, Error, F>
 where
   F: Parser<Input>,
   Error: ParseError<Input>,
@@ -1164,7 +1165,7 @@ enum State<E> {
 /// assert_eq!(sign.parse("10"), Ok(("10", 1)));
 /// # }
 /// ```
-pub fn success<I, O: Clone, E: ParseError<I>>(val: O) -> Success<O, E> {
+pub const fn success<I, O: Clone, E: ParseError<I>>(val: O) -> Success<O, E> {
   Success {
     val,
     e: PhantomData,
@@ -1210,7 +1211,7 @@ where
 /// let s = "string";
 /// assert_eq!(fail::<_, &str, _>().parse(s), Err(Err::Error((s, ErrorKind::Fail))));
 /// ```
-pub fn fail<I, O, E: ParseError<I>>() -> Fail<O, E> {
+pub const fn fail<I, O, E: ParseError<I>>() -> Fail<O, E> {
   Fail {
     o: PhantomData,
     e: PhantomData,

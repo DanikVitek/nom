@@ -6,7 +6,7 @@ mod tests;
 use core::marker::PhantomData;
 
 use crate::bytes::{take, Take};
-use crate::combinator::FlatMap;
+use crate::combinator::{flat_map, FlatMap};
 use crate::error::ErrorKind;
 use crate::error::ParseError;
 use crate::internal::{Err, Needed, Parser};
@@ -62,7 +62,7 @@ const MAX_INITIAL_CAPACITY_BYTES: usize = 65536;
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn many0<I, F>(f: F) -> Many0<F>
+pub const fn many0<I, F>(f: F) -> Many0<F>
 where
   I: Clone + Input,
   F: Parser<I>,
@@ -147,7 +147,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn many1<I, F>(parser: F) -> Many1<F>
+pub const fn many1<I, F>(parser: F) -> Many1<F>
 where
   I: Clone + Input,
   F: Parser<I>,
@@ -245,7 +245,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn many_till<I, E, F, G>(f: F, g: G) -> ManyTill<F, G, E>
+pub const fn many_till<I, E, F, G>(f: F, g: G) -> ManyTill<F, G, E>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -358,7 +358,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn separated_list0<I, E, F, G>(sep: G, f: F) -> SeparatedList0<F, G>
+pub const fn separated_list0<I, E, F, G>(sep: G, f: F) -> SeparatedList0<F, G>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -476,7 +476,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn separated_list1<I, E, F, G>(separator: G, parser: F) -> SeparatedList1<F, G>
+pub const fn separated_list1<I, E, F, G>(separator: G, parser: F) -> SeparatedList1<F, G>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -589,7 +589,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn many_m_n<I, E, F>(min: usize, max: usize, parser: F) -> ManyMN<F>
+pub const fn many_m_n<I, E, F>(min: usize, max: usize, parser: F) -> ManyMN<F>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -689,7 +689,7 @@ where
 /// assert_eq!(parser("123123"), Ok(("123123", 0)));
 /// assert_eq!(parser(""), Ok(("", 0)));
 /// ```
-pub fn many0_count<I, E, F>(parser: F) -> Many0Count<F>
+pub const fn many0_count<I, E, F>(parser: F) -> Many0Count<F>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -769,7 +769,7 @@ where
 /// assert_eq!(parser("123123"), Err(Err::Error(Error::new("123123", ErrorKind::Many1Count))));
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Many1Count))));
 /// ```
-pub fn many1_count<I, E, F>(parser: F) -> Many1Count<F>
+pub const fn many1_count<I, E, F>(parser: F) -> Many1Count<F>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -860,7 +860,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn count<I, F>(parser: F, count: usize) -> Count<F>
+pub const fn count<I, F>(parser: F, count: usize) -> Count<F>
 where
   I: Clone,
   F: Parser<I>,
@@ -942,7 +942,7 @@ where
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Tag))));
 /// assert_eq!(parser("abcabcabc"), Ok(("abc", ["abc", "abc"])));
 /// ```
-pub fn fill<'a, I, E, F>(
+pub const fn fill<'a, I, E, F>(
   parser: F,
   buf: &'a mut [<F as Parser<I>>::Output],
 ) -> Fill<'a, F, <F as Parser<I>>::Output>
@@ -1043,7 +1043,7 @@ where
 /// assert_eq!(parser("123123"), Ok(("123123", vec![])));
 /// assert_eq!(parser(""), Ok(("", vec![])));
 /// ```
-pub fn fold_many0<I, E, F, G, H, R>(parser: F, init: H, g: G) -> FoldMany0<F, G, H, R>
+pub const fn fold_many0<I, E, F, G, H, R>(parser: F, init: H, g: G) -> FoldMany0<F, G, H, R>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -1156,7 +1156,7 @@ where
 /// assert_eq!(parser("123123"), Err(Err::Error(Error::new("123123", ErrorKind::Many1))));
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Many1))));
 /// ```
-pub fn fold_many1<I, E, F, G, H, R>(parser: F, init: H, g: G) -> FoldMany1<F, G, H, R>
+pub const fn fold_many1<I, E, F, G, H, R>(parser: F, init: H, g: G) -> FoldMany1<F, G, H, R>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -1285,7 +1285,7 @@ where
 /// assert_eq!(parser(""), Ok(("", vec![])));
 /// assert_eq!(parser("abcabcabc"), Ok(("abc", vec!["abc", "abc"])));
 /// ```
-pub fn fold_many_m_n<I, E, F, G, H, R>(
+pub const fn fold_many_m_n<I, E, F, G, H, R>(
   min: usize,
   max: usize,
   parser: F,
@@ -1402,14 +1402,14 @@ where
 /// assert_eq!(parser(b"\x00\x03abcefg"), Ok((&b"efg"[..], &b"abc"[..])));
 /// assert_eq!(parser(b"\x00\x03a"), Err(Err::Incomplete(Needed::new(2))));
 /// ```
-pub fn length_data<I, E, F>(f: F) -> LengthData<I, E, F>
+pub const fn length_data<I, E, F>(f: F) -> LengthData<I, E, F>
 where
   I: Input,
   <F as Parser<I>>::Output: ToUsize,
   F: Parser<I, Error = E>,
   E: ParseError<I>,
 {
-  f.flat_map(take)
+  flat_map(f, take)
 }
 
 /// Parser implementation for the [`length_data`] combinator
@@ -1439,7 +1439,7 @@ pub type LengthData<I, E, F> =
 /// assert_eq!(parser(b"\x00\x03123123"), Err(Err::Error(Error::new(&b"123"[..], ErrorKind::Tag))));
 /// assert_eq!(parser(b"\x00\x03a"), Err(Err::Incomplete(Needed::new(2))));
 /// ```
-pub fn length_value<I, E, F, G>(f: F, g: G) -> LengthValue<F, G, E>
+pub const fn length_value<I, E, F, G>(f: F, g: G) -> LengthValue<F, G, E>
 where
   I: Clone + Input,
   <F as Parser<I>>::Output: ToUsize,
@@ -1534,7 +1534,7 @@ where
 /// assert_eq!(parser(b"\x03123123123"), Err(Err::Error(Error::new(&b"123123123"[..], ErrorKind::Tag))));
 /// ```
 #[cfg(feature = "alloc")]
-pub fn length_count<I, E, F, G>(f: F, g: G) -> LengthCount<F, G, E>
+pub const fn length_count<I, E, F, G>(f: F, g: G) -> LengthCount<F, G, E>
 where
   I: Clone,
   <F as Parser<I>>::Output: ToUsize,
@@ -1705,7 +1705,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn many<I, E, Collection, F, R>(range: R, parser: F) -> Many<F, R, Collection>
+pub const fn many<I, E, Collection, F, R>(range: R, parser: F) -> Many<F, R, Collection>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
@@ -1830,7 +1830,7 @@ where
 /// assert_eq!(parser(""), Ok(("", vec![])));
 /// assert_eq!(parser("abcabcabc"), Ok(("abc", vec!["abc", "abc"])));
 /// ```
-pub fn fold<I, E, F, G, H, J, R>(range: J, parser: F, init: H, fold: G) -> Fold<F, G, H, J>
+pub const fn fold<I, E, F, G, H, J, R>(range: J, parser: F, init: H, fold: G) -> Fold<F, G, H, J>
 where
   I: Clone + Input,
   F: Parser<I, Error = E>,
