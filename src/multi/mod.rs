@@ -6,6 +6,7 @@ mod tests;
 use core::marker::PhantomData;
 
 use crate::bytes::{take, Take};
+use crate::combinator::FlatMap;
 use crate::error::ErrorKind;
 use crate::error::ParseError;
 use crate::internal::{Err, Needed, Parser};
@@ -13,12 +14,12 @@ use crate::lib::std::num::NonZeroUsize;
 #[cfg(feature = "alloc")]
 use crate::lib::std::vec::Vec;
 use crate::traits::ToUsize;
+use crate::Check;
 use crate::Input;
 use crate::Mode;
 use crate::NomRange;
 use crate::OutputM;
 use crate::OutputMode;
-use crate::{Check, FlatMap};
 use crate::{Emit, PResult};
 
 /// Don't pre-allocate more than 64KiB when calling `Vec::with_capacity`.
@@ -1412,7 +1413,8 @@ where
 }
 
 /// Parser implementation for the [`length_data`] combinator
-pub type LengthData<I, E, F> = FlatMap<F, fn(<F as Parser<I>>::Output) -> Take<E>>;
+pub type LengthData<I, E, F> =
+  FlatMap<F, fn(<F as Parser<I>>::Output) -> Take<<F as Parser<I>>::Output, E>>;
 
 /// Gets a number from the first parser, takes a subslice of the input of that size,
 /// then applies the second parser on that subslice.

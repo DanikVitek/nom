@@ -38,7 +38,7 @@ use crate::{
 /// assert_eq!(parser("S"), Err(Err::Error(Error::new("S", ErrorKind::Tag))));
 /// assert_eq!(parser("H"), Err(Err::Incomplete(Needed::new(4))));
 /// ```
-pub fn tag<T, I, Error: ParseError<I>>(tag: T) -> Tag<T, Error>
+pub const fn tag<T, I, Error: ParseError<I>>(tag: T) -> Tag<T, Error>
 where
   I: Input + Compare<T>,
   T: Input,
@@ -118,7 +118,7 @@ where
 /// assert_eq!(parser("Something"), Err(Err::Error(Error::new("Something", ErrorKind::Tag))));
 /// assert_eq!(parser(""), Err(Err::Incomplete(Needed::new(5))));
 /// ```
-pub fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> TagNoCase<T, Error>
+pub const fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> TagNoCase<T, Error>
 where
   I: Input + Compare<T>,
   T: Input,
@@ -232,7 +232,7 @@ where
 /// assert_eq!(not_space("Nospace"), Ok(("", "Nospace")));
 /// assert_eq!(not_space(""), Err(Err::Error(Error::new("", ErrorKind::IsNot))));
 /// ```
-pub fn is_not<T, I, Error: ParseError<I>>(arr: T) -> IsNot<T, Error>
+pub const fn is_not<T, I, Error: ParseError<I>>(arr: T) -> IsNot<T, Error>
 where
   I: Input,
   T: FindToken<<I as Input>::Item>,
@@ -296,7 +296,7 @@ where
 /// assert_eq!(hex("D15EA5E"), Ok(("", "D15EA5E")));
 /// assert_eq!(hex(""), Err(Err::Error(Error::new("", ErrorKind::IsA))));
 /// ```
-pub fn is_a<T, I, Error: ParseError<I>>(arr: T) -> IsA<T, Error>
+pub const fn is_a<T, I, Error: ParseError<I>>(arr: T) -> IsA<T, Error>
 where
   I: Input,
   T: FindToken<<I as Input>::Item>,
@@ -358,7 +358,7 @@ where
 /// assert_eq!(alpha(b"latin"), Ok((&b""[..], &b"latin"[..])));
 /// assert_eq!(alpha(b""), Ok((&b""[..], &b""[..])));
 /// ```
-pub fn take_while<F, I, Error: ParseError<I>>(cond: F) -> TakeWhile<F, Error>
+pub const fn take_while<F, I, Error: ParseError<I>>(cond: F) -> TakeWhile<F, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -424,7 +424,7 @@ where
 /// assert_eq!(alpha(b"latin"), Err(Err::Incomplete(Needed::new(1))));
 /// assert_eq!(alpha(b"12345"), Err(Err::Error(Error::new(&b"12345"[..], ErrorKind::TakeWhile1))));
 /// ```
-pub fn take_while1<F, I, Error: ParseError<I>>(cond: F) -> TakeWhile1<F, Error>
+pub const fn take_while1<F, I, Error: ParseError<I>>(cond: F) -> TakeWhile1<F, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -493,7 +493,7 @@ where
 /// assert_eq!(short_alpha(b"ed"), Err(Err::Incomplete(Needed::new(1))));
 /// assert_eq!(short_alpha(b"12345"), Err(Err::Error(Error::new(&b"12345"[..], ErrorKind::TakeWhileMN))));
 /// ```
-pub fn take_while_m_n<F, I, Error: ParseError<I>>(
+pub const fn take_while_m_n<F, I, Error: ParseError<I>>(
   m: usize,
   n: usize,
   predicate: F,
@@ -606,7 +606,7 @@ where
 /// assert_eq!(till_colon("12345"), Ok(("", "12345")));
 /// assert_eq!(till_colon(""), Ok(("", "")));
 /// ```
-pub fn take_till<F, I, Error: ParseError<I>>(cond: F) -> TakeTill<F, Error>
+pub const fn take_till<F, I, Error: ParseError<I>>(cond: F) -> TakeTill<F, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -640,7 +640,7 @@ where
 /// assert_eq!(till_colon("12345"), Err(Err::Incomplete(Needed::new(1))));
 /// assert_eq!(till_colon(""), Err(Err::Incomplete(Needed::new(1))));
 /// ```
-pub fn take_till1<F, I, Error: ParseError<I>>(cond: F) -> TakeTill1<F, Error>
+pub const fn take_till1<F, I, Error: ParseError<I>>(cond: F) -> TakeTill1<F, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -705,39 +705,43 @@ where
 /// assert_eq!(take6("things"), Ok(("", "things")));
 /// assert_eq!(take6("short"), Err(Err::Incomplete(Needed::Unknown)));
 /// ```
-pub fn take<C, I, Error: ParseError<I>>(count: C) -> Take<Error>
+pub const fn take<C, I, Error: ParseError<I>>(count: C) -> Take<C, Error>
 where
   I: Input,
   C: ToUsize,
 {
   Take {
-    length: count.to_usize(),
+    length: count,
     e: PhantomData,
   }
 }
 
 /// Parser implementation for [`take`]
-pub struct Take<E> {
-  length: usize,
+pub struct Take<C, E> {
+  length: C,
   e: PhantomData<E>,
 }
 
-impl<E> Clone for Take<E> {
+impl<C: Clone, E> Clone for Take<C, E> {
   fn clone(&self) -> Self {
-    *self
+    Self {
+      length: self.length.clone(),
+      e: PhantomData,
+    }
   }
 }
-impl<E> Copy for Take<E> {}
+impl<C: Copy, E> Copy for Take<C, E> {}
 
-impl<I, Error: ParseError<I>> Parser<I> for Take<Error>
+impl<C, I, Error: ParseError<I>> Parser<I> for Take<C, Error>
 where
+  C: ToUsize,
   I: Input,
 {
   type Output = I;
   type Error = Error;
 
   fn process<OM: OutputMode>(&mut self, i: I) -> crate::PResult<OM, I, Self::Output, Self::Error> {
-    match i.slice_index(self.length) {
+    match i.slice_index(self.length.to_usize()) {
       Err(needed) if OM::Incomplete::is_streaming() => Err(Err::Incomplete(needed)),
       Err(_) => Err(Err::Error(OM::Error::bind(|| {
         let e: ErrorKind = ErrorKind::Eof;
@@ -770,7 +774,7 @@ where
 /// assert_eq!(until_eof("hello, worldeo"), Err(Err::Incomplete(Needed::Unknown)));
 /// assert_eq!(until_eof("1eof2eof"), Ok(("eof2eof", "1")));
 /// ```
-pub fn take_until<T, I, Error: ParseError<I>>(tag: T) -> TakeUntil<T, Error>
+pub const fn take_until<T, I, Error: ParseError<I>>(tag: T) -> TakeUntil<T, Error>
 where
   I: Input + FindSubstring<T>,
   T: Clone,
@@ -840,7 +844,7 @@ where
 /// assert_eq!(until_eof("1eof2eof"), Ok(("eof2eof", "1")));
 /// assert_eq!(until_eof("eof"),  Err(Err::Error(Error::new("eof", ErrorKind::TakeUntil))));
 /// ```
-pub fn take_until1<T, I, Error: ParseError<I>>(tag: T) -> TakeUntil1<T, Error>
+pub const fn take_until1<T, I, Error: ParseError<I>>(tag: T) -> TakeUntil1<T, Error>
 where
   I: Input + FindSubstring<T>,
   T: Clone,
@@ -913,7 +917,7 @@ where
 /// assert_eq!(esc("12\\\"34;"), Ok((";", "12\\\"34")));
 /// ```
 ///
-pub fn escaped<I, Error, F, G>(normal: F, control_char: char, escapable: G) -> Escaped<F, G, Error>
+pub const fn escaped<I, Error, F, G>(normal: F, control_char: char, escapable: G) -> Escaped<F, G, Error>
 where
   I: Input + Offset,
   <I as Input>::Item: AsChar,
@@ -1097,7 +1101,7 @@ where
 /// ```
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "docsrs", doc(cfg(feature = "alloc")))]
-pub fn escaped_transform<I, Error, F, G, ExtendItem, Output>(
+pub const fn escaped_transform<I, Error, F, G, ExtendItem, Output>(
   normal: F,
   control_char: char,
   transform: G,

@@ -21,28 +21,28 @@ pub mod streaming;
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_alpha`")]
-pub fn is_alphabetic(chr: u8) -> bool {
+pub const fn is_alphabetic(chr: u8) -> bool {
   matches!(chr, 0x41..=0x5A | 0x61..=0x7A)
 }
 
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_dec_digit`")]
-pub fn is_digit(chr: u8) -> bool {
+pub const fn is_digit(chr: u8) -> bool {
   matches!(chr, 0x30..=0x39)
 }
 
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_hex_digit`")]
-pub fn is_hex_digit(chr: u8) -> bool {
+pub const fn is_hex_digit(chr: u8) -> bool {
   matches!(chr, 0x30..=0x39 | 0x41..=0x46 | 0x61..=0x66)
 }
 
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_oct_digit`")]
-pub fn is_oct_digit(chr: u8) -> bool {
+pub const fn is_oct_digit(chr: u8) -> bool {
   matches!(chr, 0x30..=0x37)
 }
 
@@ -58,28 +58,28 @@ pub fn is_oct_digit(chr: u8) -> bool {
 /// assert_eq!(is_bin_digit(b'1'), true);
 /// ```
 #[inline]
-pub fn is_bin_digit(chr: u8) -> bool {
+pub const fn is_bin_digit(chr: u8) -> bool {
   matches!(chr, 0x30..=0x31)
 }
 
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_alphanum`")]
-pub fn is_alphanumeric(chr: u8) -> bool {
-  AsChar::is_alphanum(chr)
+pub const fn is_alphanumeric(chr: u8) -> bool {
+  matches!(chr, 0x41..=0x5A | 0x61..=0x7A | 0x30..=0x39)
 }
 
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_space`")]
-pub fn is_space(chr: u8) -> bool {
+pub const fn is_space(chr: u8) -> bool {
   chr == b' ' || chr == b'\t'
 }
 
 #[inline]
 #[doc(hidden)]
 #[deprecated(since = "8.0.0", note = "Replaced with `AsChar::is_newline`")]
-pub fn is_newline(chr: u8) -> bool {
+pub const fn is_newline(chr: u8) -> bool {
   chr == b'\n'
 }
 
@@ -97,7 +97,7 @@ pub fn is_newline(chr: u8) -> bool {
 /// assert_eq!(parser("bc"), Err(Err::Error(Error::new("bc", ErrorKind::Char))));
 /// assert_eq!(parser(""), Err(Err::Incomplete(Needed::new(1))));
 /// ```
-pub fn char<I, Error: ParseError<I>>(c: char) -> Char<Error>
+pub const fn char<I, Error: ParseError<I>>(c: char) -> Char<Error>
 where
   I: Input,
   <I as Input>::Item: AsChar,
@@ -161,7 +161,7 @@ where
 /// assert_eq!(parser("cd"), Err(Err::Error(Error::new("cd", ErrorKind::Satisfy))));
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Satisfy))));
 /// ```
-pub fn satisfy<F, I, Error: ParseError<I>>(predicate: F) -> Satisfy<F, Error>
+pub const fn satisfy<F, I, Error: ParseError<I>>(predicate: F) -> Satisfy<F, Error>
 where
   I: Input,
   <I as Input>::Item: AsChar,
@@ -251,7 +251,7 @@ where
 /// assert_eq!(one_of::<_, _, (&str, ErrorKind)>("a")("bc"), Err(Err::Error(("bc", ErrorKind::OneOf))));
 /// assert_eq!(one_of::<_, _, (&str, ErrorKind)>("a")(""), Err(Err::Error(("", ErrorKind::OneOf))));
 /// ```
-pub fn one_of<I, T, Error: ParseError<I>>(list: T) -> OneOf<T, Error>
+pub const fn one_of<I, T, Error: ParseError<I>>(list: T) -> OneOf<T, Error>
 where
   I: Input,
   <I as Input>::Item: AsChar,
@@ -312,7 +312,7 @@ where
 /// assert_eq!(none_of::<_, _, (_, ErrorKind)>("ab")("a"), Err(Err::Error(("a", ErrorKind::NoneOf))));
 /// assert_eq!(none_of::<_, _, (_, ErrorKind)>("a")(""), Err(Err::Incomplete(Needed::Unknown)));
 /// ```
-pub fn none_of<I, T, Error: ParseError<I>>(list: T) -> NoneOf<T, Error>
+pub const fn none_of<I, T, Error: ParseError<I>>(list: T) -> NoneOf<T, Error>
 where
   I: Input,
   <I as Input>::Item: AsChar,
@@ -382,7 +382,7 @@ where
 /// assert_eq!(parser_streaming("abc"), Ok(("bc",'a')));
 /// assert_eq!(parser_streaming(""), Err(Err::Incomplete(Needed::new(1))));
 /// ```
-pub fn anychar<I, E: ParseError<I>>() -> AnyChar<E>
+pub const fn anychar<I, E: ParseError<I>>() -> AnyChar<E>
 where
   I: Input,
   <I as Input>::Item: AsChar,
@@ -442,7 +442,7 @@ where
 /// assert_eq!(digit1::<_, (_, ErrorKind)>().parse_complete("c1"), Err(Err::Error(("c1", ErrorKind::Digit))));
 /// assert_eq!(digit1::<_, (_, ErrorKind)>().parse_complete(""), Err(Err::Error(("", ErrorKind::Digit))));
 /// ```
-pub fn digit1<T, E: ParseError<T>>() -> Digit1<E>
+pub const fn digit1<T, E: ParseError<T>>() -> Digit1<E>
 where
   T: Input,
   <T as Input>::Item: AsChar,
@@ -497,7 +497,7 @@ where
 /// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse_complete("Z21c"), Ok(("Z21c", "")));
 /// assert_eq!(multispace0::<_, (_, ErrorKind)>().parse_complete(""), Ok(("", "")));
 /// ```
-pub fn multispace0<I, E: ParseError<I>>() -> MultiSpace0<E>
+pub const fn multispace0<I, E: ParseError<I>>() -> MultiSpace0<E>
 where
   I: Input,
   <I as Input>::Item: AsChar,

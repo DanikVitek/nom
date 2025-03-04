@@ -39,7 +39,7 @@ use crate::internal::{Err, Mode, Parser};
 ///
 /// With a custom error type, it is possible to have alt return the error of the parser
 /// that went the farthest in the input data
-pub fn alt<List>(l: List) -> Choice<List> {
+pub const fn alt<List>(l: List) -> Choice<List> {
   Choice { parser: l }
 }
 
@@ -91,7 +91,7 @@ pub fn alt<List>(l: List) -> Choice<List> {
 /// assert_eq!(parser("ab"), Err(Err::Error(Error::new("b", ErrorKind::Char))));
 /// ```
 ///
-pub fn permutation<I: Clone, E: ParseError<I>, List>(list: List) -> Permutation<List, E> {
+pub const fn permutation<I: Clone, E: ParseError<I>, List>(list: List) -> Permutation<List, E> {
   Permutation {
     parser: list,
     e: PhantomData,

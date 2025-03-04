@@ -668,7 +668,7 @@ where
 /// assert_eq!(le_u16(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn u16<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u16, E>
+pub const fn u16<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u16, E>
 where
   I: Input<Item = u8>,
 {
@@ -700,7 +700,7 @@ where
 /// assert_eq!(le_u24(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn u24<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u32, E>
+pub const fn u24<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u32, E>
 where
   I: Input<Item = u8>,
 {
@@ -732,7 +732,7 @@ where
 /// assert_eq!(le_u32(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn u32<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u32, E>
+pub const fn u32<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u32, E>
 where
   I: Input<Item = u8>,
 {
@@ -764,7 +764,7 @@ where
 /// assert_eq!(le_u64(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn u64<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u64, E>
+pub const fn u64<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u64, E>
 where
   I: Input<Item = u8>,
 {
@@ -796,7 +796,7 @@ where
 /// assert_eq!(le_u128(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn u128<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u128, E>
+pub const fn u128<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, u128, E>
 where
   I: Input<Item = u8>,
 {
@@ -852,7 +852,7 @@ where
 /// assert_eq!(le_i16(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn i16<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i16, E>
+pub const fn i16<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i16, E>
 where
   I: Input<Item = u8>,
 {
@@ -884,7 +884,7 @@ where
 /// assert_eq!(le_i24(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn i24<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i32, E>
+pub const fn i24<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i32, E>
 where
   I: Input<Item = u8>,
 {
@@ -916,7 +916,7 @@ where
 /// assert_eq!(le_i32(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn i32<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i32, E>
+pub const fn i32<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i32, E>
 where
   I: Input<Item = u8>,
 {
@@ -948,7 +948,7 @@ where
 /// assert_eq!(le_i64(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn i64<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i64, E>
+pub const fn i64<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i64, E>
 where
   I: Input<Item = u8>,
 {
@@ -980,7 +980,7 @@ where
 /// assert_eq!(le_i128(&b"\x01"[..]), Err(Err::Error((&[0x01][..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn i128<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i128, E>
+pub const fn i128<I, E: ParseError<I>>(endian: Endianness) -> impl Fn(I) -> IResult<I, i128, E>
 where
   I: Input<Item = u8>,
 {
@@ -1112,7 +1112,7 @@ where
 /// assert_eq!(le_f32(&b"abc"[..]), Err(Err::Error((&b"abc"[..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn f32<I, E: ParseError<I>>(endian: Endianness) -> fn(I) -> IResult<I, f32, E>
+pub const fn f32<I, E: ParseError<I>>(endian: Endianness) -> fn(I) -> IResult<I, f32, E>
 where
   I: Input<Item = u8>,
 {
@@ -1151,7 +1151,7 @@ where
 /// assert_eq!(le_f64(&b"abc"[..]), Err(Err::Error((&b"abc"[..], ErrorKind::Eof))));
 /// ```
 #[inline]
-pub fn f64<I, E: ParseError<I>>(endian: Endianness) -> fn(I) -> IResult<I, f64, E>
+pub const fn f64<I, E: ParseError<I>>(endian: Endianness) -> fn(I) -> IResult<I, f64, E>
 where
   I: Input<Item = u8>,
 {
@@ -1419,7 +1419,7 @@ where
     Some(f) => Ok((i, f)),
     None => Err(Err::Error(E::from_error_kind(
       i,
-      crate::error::ErrorKind::Float,
+      ErrorKind::Float,
     ))),
   }
 }
@@ -1469,7 +1469,7 @@ where
     Some(f) => Ok((i, f)),
     None => Err(Err::Error(E::from_error_kind(
       i,
-      crate::error::ErrorKind::Float,
+      ErrorKind::Float,
     ))),
   }
 }

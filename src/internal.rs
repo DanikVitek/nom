@@ -62,7 +62,7 @@ pub enum Needed {
 
 impl Needed {
   /// Creates [`Needed`] instance, returns [`Needed::Unknown`] if the argument is zero
-  pub fn new(s: usize) -> Self {
+  pub const fn new(s: usize) -> Self {
     match NonZeroUsize::new(s) {
       Some(sz) => Needed::Size(sz),
       None => Needed::Unknown,
@@ -70,7 +70,7 @@ impl Needed {
   }
 
   /// Indicates if we know how many bytes we need
-  pub fn is_known(&self) -> bool {
+  pub const fn is_known(&self) -> bool {
     !matches!(*self, Needed::Unknown)
   }
 
@@ -116,7 +116,7 @@ pub enum Err<Failure, Error = Failure> {
 
 impl<E> Err<E> {
   /// Tests if the result is Incomplete
-  pub fn is_incomplete(&self) -> bool {
+  pub const fn is_incomplete(&self) -> bool {
     matches!(self, Err::Incomplete(..))
   }
 
@@ -231,6 +231,8 @@ where
 
 #[cfg(feature = "std")]
 use std::error::Error;
+use crate::combinator::{flat_map, map, map_opt, map_parser, map_res, AndThen, FlatMap, Map, MapOpt, MapRes};
+use crate::sequence::{or, pair, And, Or};
 
 #[cfg(feature = "std")]
 impl<E> Error for Err<E>
@@ -452,81 +454,89 @@ pub trait Parser<Input> {
   ) -> PResult<OM, Input, Self::Output, Self::Error>;
 
   /// Maps a function over the result of a parser
+  #[inline]
   fn map<G, O2>(self, g: G) -> Map<Self, G>
   where
     G: FnMut(Self::Output) -> O2,
     Self: Sized,
   {
-    Map { f: self, g }
+    map(self, g)
   }
 
   /// Applies a function returning a [`Result`] over the result of a parser.
+  #[inline]
   fn map_res<G, O2, E2>(self, g: G) -> MapRes<Self, G>
   where
+    Input: Clone,
     G: FnMut(Self::Output) -> Result<O2, E2>,
     Self::Error: FromExternalError<Input, E2>,
     Self: Sized,
   {
-    MapRes { f: self, g }
+    map_res(self, g)
   }
 
   /// Applies a function returning an [`Option`] over the result of a parser.
+  #[inline]
   fn map_opt<G, O2>(self, g: G) -> MapOpt<Self, G>
   where
+    Input: Clone,
     G: FnMut(Self::Output) -> Option<O2>,
     Self: Sized,
   {
-    MapOpt { f: self, g }
+    map_opt(self, g)
   }
 
   /// Creates a second parser from the output of the first one, then apply over the rest of the input
+  #[inline]
   fn flat_map<G, H>(self, g: G) -> FlatMap<Self, G>
   where
     G: FnMut(Self::Output) -> H,
     H: Parser<Input, Error = Self::Error>,
     Self: Sized,
   {
-    FlatMap { f: self, g }
+    flat_map(self, g)
   }
 
   /// Applies a second parser over the output of the first one
+  #[inline]
   fn and_then<G>(self, g: G) -> AndThen<Self, G>
   where
     G: Parser<Self::Output, Error = Self::Error>,
     Self: Sized,
   {
-    AndThen { f: self, g }
+    map_parser(self, g)
   }
 
   /// Applies a second parser after the first one, return their results as a tuple
+  #[inline]
   fn and<G, O2>(self, g: G) -> And<Self, G>
   where
     G: Parser<Input, Output = O2, Error = Self::Error>,
     Self: Sized,
   {
-    And { f: self, g }
+    pair(self, g)
   }
 
   /// Applies a second parser over the input if the first one failed
+  #[inline]
   fn or<G>(self, g: G) -> Or<Self, G>
   where
     G: Parser<Input, Output = Self::Output, Error = Self::Error>,
     Self: Sized,
   {
-    Or { f: self, g }
+    or(self, g)
   }
 
   /// automatically converts the parser's output and error values to another type, as long as they
   /// implement the [`From`] trait
-  fn into<O2: From<Self::Output>, E2: From<Self::Error>>(self) -> Into<Self, O2, E2>
+  #[inline]
+  fn into<O2, E2>(self) -> crate::combinator::Into<Self, O2, E2>
   where
+    O2: From<Self::Output>,
+    E2: From<Self::Error> + ParseError<Input>,
     Self: Sized,
   {
-    Into {
-      f: self,
-      phantom_out2: PhantomData,
-      phantom_err2: PhantomData,
-    }
+    crate::combinator::into(self)
   }
 }
 
@@ -600,218 +610,6 @@ impl<I, O, E: ParseError<I>> Parser<I> for Box<dyn Parser<I, Output = O, Error =
   }
 }
 */
-
-/// Implementation of [`Parser::map`]
-#[derive(Clone, Copy)]
-pub struct Map<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<I, O2, E: ParseError<I>, F: Parser<I, Error = E>, G: FnMut(<F as Parser<I>>::Output) -> O2>
-  Parser<I> for Map<F, G>
-{
-  type Output = O2;
-  type Error = E;
-
-  #[inline(always)]
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    match self.f.process::<OM>(i) {
-      Err(e) => Err(e),
-      Ok((i, o)) => Ok((i, OM::Output::map(o, |o| (self.g)(o)))),
-    }
-  }
-}
-
-/// Implementation of [`Parser::map_res`]
-#[derive(Clone, Copy)]
-pub struct MapRes<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<I, O2, E2, F, G> Parser<I> for MapRes<F, G>
-where
-  I: Clone,
-  <F as Parser<I>>::Error: FromExternalError<I, E2>,
-  F: Parser<I>,
-  G: FnMut(<F as Parser<I>>::Output) -> Result<O2, E2>,
-{
-  type Output = O2;
-  type Error = <F as Parser<I>>::Error;
-
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    let (input, o1) = self
-      .f
-      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i.clone())?;
-
-    match (self.g)(o1) {
-      Ok(o2) => Ok((input, OM::Output::bind(|| o2))),
-      Err(e) => Err(Err::Error(OM::Error::bind(|| {
-        <F as Parser<I>>::Error::from_external_error(i, ErrorKind::MapRes, e)
-      }))),
-    }
-  }
-}
-
-/// Implementation of [`Parser::map_opt`]
-#[derive(Clone, Copy)]
-pub struct MapOpt<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<I, O2, F, G> Parser<I> for MapOpt<F, G>
-where
-  I: Clone,
-  F: Parser<I>,
-  G: FnMut(<F as Parser<I>>::Output) -> Option<O2>,
-{
-  type Output = O2;
-  type Error = <F as Parser<I>>::Error;
-
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    let (input, o1) = self
-      .f
-      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i.clone())?;
-
-    match (self.g)(o1) {
-      Some(o2) => Ok((input, OM::Output::bind(|| o2))),
-      None => Err(Err::Error(OM::Error::bind(|| {
-        <F as Parser<I>>::Error::from_error_kind(i, ErrorKind::MapOpt)
-      }))),
-    }
-  }
-}
-
-/// Implementation of [`Parser::flat_map`]
-#[derive(Clone, Copy)]
-pub struct FlatMap<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<
-    I,
-    E: ParseError<I>,
-    F: Parser<I, Error = E>,
-    G: FnMut(<F as Parser<I>>::Output) -> H,
-    H: Parser<I, Error = E>,
-  > Parser<I> for FlatMap<F, G>
-{
-  type Output = <H as Parser<I>>::Output;
-  type Error = E;
-
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    let (input, o1) = self
-      .f
-      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i)?;
-
-    (self.g)(o1).process::<OM>(input)
-  }
-}
-
-/// Implementation of [`Parser::and_then`]
-#[derive(Clone, Copy)]
-pub struct AndThen<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<I, F: Parser<I>, G: Parser<<F as Parser<I>>::Output, Error = <F as Parser<I>>::Error>>
-  Parser<I> for AndThen<F, G>
-{
-  type Output = <G as Parser<<F as Parser<I>>::Output>>::Output;
-  type Error = <F as Parser<I>>::Error;
-
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    let (input, o1) = self
-      .f
-      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i)?;
-
-    let (_, o2) = self.g.process::<OM>(o1)?;
-    Ok((input, o2))
-  }
-}
-
-/// Implementation of [`Parser::and`]
-#[derive(Clone, Copy)]
-pub struct And<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Parser<I>
-  for And<F, G>
-{
-  type Output = (<F as Parser<I>>::Output, <G as Parser<I>>::Output);
-  type Error = E;
-
-  #[inline(always)]
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    let (i, o1) = self.f.process::<OM>(i)?;
-    let (i, o2) = self.g.process::<OM>(i)?;
-
-    Ok((i, OM::Output::combine(o1, o2, |o1, o2| (o1, o2))))
-  }
-}
-
-/// Implementation of [`Parser::or`]
-#[derive(Clone, Copy)]
-pub struct Or<F, G> {
-  f: F,
-  g: G,
-}
-
-impl<
-    I: Clone,
-    O,
-    E: ParseError<I>,
-    F: Parser<I, Output = O, Error = E>,
-    G: Parser<I, Output = O, Error = E>,
-  > Parser<I> for Or<F, G>
-{
-  type Output = <F as Parser<I>>::Output;
-  type Error = <F as Parser<I>>::Error;
-
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    match self.f.process::<OM>(i.clone()) {
-      Err(Err::Error(e1)) => match self.g.process::<OM>(i) {
-        Err(Err::Error(e2)) => Err(Err::Error(OM::Error::combine(e1, e2, |e1, e2| e1.or(e2)))),
-        res => res,
-      },
-      res => res,
-    }
-  }
-}
-
-/// Implementation of [`Parser::into`]
-#[derive(Clone, Copy)]
-pub struct Into<F, O2, E2> {
-  f: F,
-  phantom_out2: PhantomData<O2>,
-  phantom_err2: PhantomData<E2>,
-}
-
-impl<
-    I,
-    O2: From<<F as Parser<I>>::Output>,
-    E2: ParseError<I> + From<<F as Parser<I>>::Error>,
-    F: Parser<I>,
-  > Parser<I> for Into<F, O2, E2>
-{
-  type Output = O2;
-  type Error = E2;
-
-  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    match self.f.process::<OM>(i) {
-      Ok((i, o)) => Ok((i, OM::Output::map(o, |o| o.into()))),
-      Err(Err::Error(e)) => Err(Err::Error(OM::Error::map(e, |e| e.into()))),
-      Err(Err::Failure(e)) => Err(Err::Failure(e.into())),
-      Err(Err::Incomplete(e)) => Err(Err::Incomplete(e)),
-    }
-  }
-}
 
 /// Alternate between two Parser implementations with the same result type.
 #[derive(Clone, Copy)]

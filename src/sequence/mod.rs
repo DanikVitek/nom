@@ -5,7 +5,7 @@ mod tests;
 
 use crate::error::ParseError;
 use crate::internal::{IResult, Parser};
-use crate::{And, Check, OutputM, OutputMode, PResult};
+use crate::{Check, Mode, OutputM, OutputMode, PResult, Err};
 
 /// Gets an object from the first parser,
 /// then gets another object from the second parser.
@@ -27,12 +27,92 @@ use crate::{And, Check, OutputM, OutputMode, PResult};
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn pair<I, O1, O2, E: ParseError<I>, F, G>(first: F, second: G) -> And<F, G>
+pub const fn pair<I, O1, O2, E: ParseError<I>, F, G>(first: F, second: G) -> And<F, G>
 where
   F: Parser<I, Output = O1, Error = E>,
   G: Parser<I, Output = O2, Error = E>,
 {
-  first.and(second)
+  And { first, second }
+}
+
+/// Parser implementation for [`pair`]
+#[derive(Clone, Copy)]
+pub struct And<F, G> {
+  first: F,
+  second: G,
+}
+
+impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Parser<I>
+  for And<F, G>
+{
+  type Output = (<F as Parser<I>>::Output, <G as Parser<I>>::Output);
+  type Error = E;
+
+  #[inline(always)]
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    let (i, o1) = self.first.process::<OM>(i)?;
+    let (i, o2) = self.second.process::<OM>(i)?;
+
+    Ok((i, OM::Output::combine(o1, o2, |o1, o2| (o1, o2))))
+  }
+}
+
+/// Applies a second parser over the input if the first one failed
+///
+/// # Arguments
+/// * `first` The first parser to apply.
+/// * `second` The second parser to apply if the first one fails.
+///
+/// # Example
+/// ```
+/// use nom::sequence::or;
+/// use nom::bytes::complete::tag;
+/// use nom::{error::ErrorKind, Err, Parser};
+///
+/// let mut parser = or(tag("abc"), tag("efg"));
+///
+/// assert_eq!(parser.parse("abc"), Ok(("", "abc")));
+/// assert_eq!(parser.parse("efg"), Ok(("", "efg")));
+/// assert_eq!(parser.parse("abcefghij"), Ok(("efghij", "abc")));
+/// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
+/// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
+/// ```
+#[inline]
+pub const fn or<I, O1, O2, E, F, G>(first: F, second: G) -> Or<F, G>
+where
+  F: Parser<I, Output = O1, Error = E>,
+  G: Parser<I, Output = O2, Error = E>,
+{
+  Or{ first, second }
+}
+
+/// Parser implementation for [`or`]
+#[derive(Clone, Copy)]
+pub struct Or<F, G> {
+  first: F,
+  second: G,
+}
+
+impl<
+  I: Clone,
+  O,
+  E: ParseError<I>,
+  F: Parser<I, Output = O, Error = E>,
+  G: Parser<I, Output = O, Error = E>,
+> Parser<I> for Or<F, G>
+{
+  type Output = <F as Parser<I>>::Output;
+  type Error = <F as Parser<I>>::Error;
+
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    match self.first.process::<OM>(i.clone()) {
+      Err(Err::Error(e1)) => match self.second.process::<OM>(i) {
+        Err(Err::Error(e2)) => Err(Err::Error(OM::Error::combine(e1, e2, |e1, e2| e1.or(e2)))),
+        res => res,
+      },
+      res => res,
+    }
+  }
 }
 
 /// Matches an object from the first parser and discards it,
@@ -56,21 +136,18 @@ where
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn preceded<I, O, E: ParseError<I>, F, G>(first: F, second: G) -> Preceded<F, G>
+pub const fn preceded<I, O, E: ParseError<I>, F, G>(first: F, second: G) -> Preceded<F, G>
 where
   F: Parser<I, Error = E>,
   G: Parser<I, Output = O, Error = E>,
 {
-  Preceded {
-    f: first,
-    g: second,
-  }
+  Preceded { first, second }
 }
 
 /// Parser implementation for the [`preceded`] combinator
 pub struct Preceded<F, G> {
-  f: F,
-  g: G,
+  first: F,
+  second: G,
 }
 
 impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Parser<I>
@@ -82,9 +159,9 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
   #[inline(always)]
   fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
     let (i, _) = self
-      .f
+      .first
       .process::<OutputM<Check, OM::Error, OM::Incomplete>>(i)?;
-    let (i, o2) = self.g.process::<OM>(i)?;
+    let (i, o2) = self.second.process::<OM>(i)?;
 
     Ok((i, o2))
   }
@@ -111,21 +188,18 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn terminated<I, O, E: ParseError<I>, F, G>(first: F, second: G) -> Terminated<F, G>
+pub const fn terminated<I, O, E: ParseError<I>, F, G>(first: F, second: G) -> Terminated<F, G>
 where
   F: Parser<I, Output = O, Error = E>,
   G: Parser<I, Error = E>,
 {
-  Terminated {
-    f: first,
-    g: second,
-  }
+  Terminated { first, second }
 }
 
 /// Parser implementation for the [`terminated`] combinator
 pub struct Terminated<F, G> {
-  f: F,
-  g: G,
+  first: F,
+  second: G,
 }
 
 impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Parser<I>
@@ -136,9 +210,9 @@ impl<I, E: ParseError<I>, F: Parser<I, Error = E>, G: Parser<I, Error = E>> Pars
 
   #[inline(always)]
   fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
-    let (i, o1) = self.f.process::<OM>(i)?;
+    let (i, o1) = self.first.process::<OM>(i)?;
     let (i, _) = self
-      .g
+      .second
       .process::<OutputM<Check, OM::Error, OM::Incomplete>>(i)?;
 
     Ok((i, o1))
@@ -204,7 +278,7 @@ where
 /// assert_eq!(parser.parse(""), Err(Err::Error(("", ErrorKind::Tag))));
 /// assert_eq!(parser.parse("123"), Err(Err::Error(("123", ErrorKind::Tag))));
 /// ```
-pub fn delimited<I, O, E: ParseError<I>, F, G, H>(
+pub const fn delimited<I, O, E: ParseError<I>, F, G, H>(
   first: F,
   second: G,
   third: H,

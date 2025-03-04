@@ -561,8 +561,8 @@ where
 
 /// Recognizes zero or more ASCII numerical and alphabetic characters: 0-9, a-z, A-Z
 ///
-/// *Complete version*: Will return the whole input if no terminating token is found (a non
-/// alphanumerical character).
+/// *Complete version*: Will return the whole input if no terminating token is found
+/// (a non-alphanumerical character).
 ///
 /// # Example
 /// ```
@@ -587,7 +587,7 @@ where
 /// Recognizes one or more ASCII numerical and alphabetic characters: 0-9, a-z, A-Z
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
-/// or the whole input if no terminating token is found (a non alphanumerical character).
+/// or the whole input if no terminating token is found (a non-alphanumerical character).
 ///
 /// # Example
 /// ```
@@ -611,7 +611,7 @@ where
 
 /// Recognizes zero or more spaces and tabs.
 ///
-/// *Complete version*: Will return the whole input if no terminating token is found (a non space
+/// *Complete version*: Will return the whole input if no terminating token is found (a non-space
 /// character).
 ///
 /// # Example
@@ -640,7 +640,7 @@ where
 /// Recognizes one or more spaces and tabs.
 ///
 /// *Complete version*: Will return an error if there's not enough input data,
-/// or the whole input if no terminating token is found (a non space character).
+/// or the whole input if no terminating token is found (a non-space character).
 ///
 /// # Example
 /// ```
@@ -670,7 +670,7 @@ where
 
 /// Recognizes zero or more spaces, tabs, carriage returns and line feeds.
 ///
-/// *Complete version*: will return the whole input if no terminating token is found (a non space
+/// *Complete version*: will return the whole input if no terminating token is found (a non-space
 /// character).
 ///
 /// # Example
@@ -699,7 +699,7 @@ where
 /// Recognizes one or more spaces, tabs, carriage returns and line feeds.
 ///
 /// *Complete version*: will return an error if there's not enough input data,
-/// or the whole input if no terminating token is found (a non space character).
+/// or the whole input if no terminating token is found (a non-space character).
 ///
 /// # Example
 /// ```

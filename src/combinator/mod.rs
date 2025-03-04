@@ -7,7 +7,6 @@ use core::marker::PhantomData;
 use crate::error::{ErrorKind, FromExternalError, ParseError};
 use crate::internal::*;
 use crate::lib::std::borrow::Borrow;
-use crate::lib::std::convert::Into;
 #[cfg(feature = "std")]
 use crate::lib::std::fmt::Debug;
 use crate::traits::{AsChar, Input, ParseTo};
@@ -66,12 +65,37 @@ where
 /// assert_eq!(parser.parse("abc"), Err(Err::Error(("abc", ErrorKind::Digit))));
 /// # }
 /// ```
-pub fn map<I, O, E: ParseError<I>, F, G>(parser: F, f: G) -> Map<F, G>
+pub const fn map<I, O, E: ParseError<I>, F, G>(parser: F, f: G) -> Map<F, G>
 where
   F: Parser<I, Error = E>,
   G: FnMut(<F as Parser<I>>::Output) -> O,
 {
-  parser.map(f)
+  Map { parser, f }
+}
+
+/// Parser implementation for [`map`]
+#[derive(Clone, Copy)]
+pub struct Map<P, F> {
+  parser: P,
+  f: F,
+}
+
+impl<I, O2, E, P, F> Parser<I> for Map<P, F>
+where
+  E: ParseError<I>,
+  P: Parser<I, Error = E>,
+  F: FnMut(<P as Parser<I>>::Output) -> O2,
+{
+  type Output = O2;
+  type Error = E;
+
+  #[inline(always)]
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    match self.parser.process::<OM>(i) {
+      Err(e) => Err(e),
+      Ok((i, o)) => Ok((i, OM::Output::map(o, |o| (self.f)(o)))),
+    }
+  }
 }
 
 /// Applies a function returning a `Result` over the result of a parser.
@@ -94,15 +118,46 @@ where
 /// assert_eq!(parse.parse("123456"), Err(Err::Error(("123456", ErrorKind::MapRes))));
 /// # }
 /// ```
-pub fn map_res<I: Clone, O, E: ParseError<I> + FromExternalError<I, E2>, E2, F, G>(
-  parser: F,
-  f: G,
-) -> MapRes<F, G>
+#[inline]
+pub const fn map_res<I, O, E, E2, F, G>(parser: F, f: G) -> MapRes<F, G>
 where
+  I: Clone,
   F: Parser<I, Error = E>,
   G: FnMut(<F as Parser<I>>::Output) -> Result<O, E2>,
+  E: ParseError<I> + FromExternalError<I, E2>,
 {
-  parser.map_res(f)
+  MapRes { parser, f }
+}
+
+/// Parser implementation for [`map_res`]
+#[derive(Clone, Copy)]
+pub struct MapRes<P, F> {
+  parser: P,
+  f: F,
+}
+
+impl<I, O2, E2, P, F> Parser<I> for MapRes<P, F>
+where
+  I: Clone,
+  <P as Parser<I>>::Error: FromExternalError<I, E2>,
+  P: Parser<I>,
+  F: FnMut(<P as Parser<I>>::Output) -> Result<O2, E2>,
+{
+  type Output = O2;
+  type Error = <P as Parser<I>>::Error;
+
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    let (input, o1) = self
+      .parser
+      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i.clone())?;
+
+    match (self.f)(o1) {
+      Ok(o2) => Ok((input, OM::Output::bind(|| o2))),
+      Err(e) => Err(Err::Error(OM::Error::bind(|| {
+        <P as Parser<I>>::Error::from_external_error(i, ErrorKind::MapRes, e)
+      }))),
+    }
+  }
 }
 
 /// Applies a function returning an [`Option`] over the result of a parser.
@@ -125,12 +180,42 @@ where
 /// assert_eq!(parse.parse("123456"), Err(Err::Error(("123456", ErrorKind::MapOpt))));
 /// # }
 /// ```
-pub fn map_opt<I: Clone, O, E: ParseError<I>, F, G>(parser: F, f: G) -> MapOpt<F, G>
+pub const fn map_opt<I: Clone, O, E: ParseError<I>, F, G>(parser: F, f: G) -> MapOpt<F, G>
 where
   F: Parser<I, Error = E>,
   G: FnMut(<F as Parser<I>>::Output) -> Option<O>,
 {
-  parser.map_opt(f)
+  MapOpt { parser, f }
+}
+
+/// Parser implementation for [`map_opt`]
+#[derive(Clone, Copy)]
+pub struct MapOpt<P, F> {
+  parser: P,
+  f: F,
+}
+
+impl<I, O2, F, G> Parser<I> for MapOpt<F, G>
+where
+  I: Clone,
+  F: Parser<I>,
+  G: FnMut(<F as Parser<I>>::Output) -> Option<O2>,
+{
+  type Output = O2;
+  type Error = <F as Parser<I>>::Error;
+
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    let (input, o1) = self
+      .parser
+      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i.clone())?;
+
+    match (self.f)(o1) {
+      Some(o2) => Ok((input, OM::Output::bind(|| o2))),
+      None => Err(Err::Error(OM::Error::bind(|| {
+        <F as Parser<I>>::Error::from_error_kind(i, ErrorKind::MapOpt)
+      }))),
+    }
+  }
 }
 
 /// Applies a parser over the result of another one.
@@ -149,12 +234,38 @@ where
 /// assert_eq!(parse.parse("123"), Err(Err::Error(("123", ErrorKind::Eof))));
 /// # }
 /// ```
-pub fn map_parser<I, O, E: ParseError<I>, F, G>(parser: F, applied_parser: G) -> AndThen<F, G>
+pub const fn map_parser<I, O, E: ParseError<I>, F, G>(parser: F, applied_parser: G) -> AndThen<F, G>
 where
   F: Parser<I, Error = E>,
   G: Parser<<F as Parser<I>>::Output, Output = O, Error = E>,
 {
-  parser.and_then(applied_parser)
+  AndThen {
+    parser,
+    applied_parser,
+  }
+}
+
+/// Parser implementation for [`and_then`]
+#[derive(Clone, Copy)]
+pub struct AndThen<F, G> {
+  parser: F,
+  applied_parser: G,
+}
+
+impl<I, F: Parser<I>, G: Parser<<F as Parser<I>>::Output, Error = <F as Parser<I>>::Error>>
+  Parser<I> for AndThen<F, G>
+{
+  type Output = <G as Parser<<F as Parser<I>>::Output>>::Output;
+  type Error = <F as Parser<I>>::Error;
+
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    let (input, o1) = self
+      .parser
+      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i)?;
+
+    let (_, o2) = self.applied_parser.process::<OM>(o1)?;
+    Ok((input, o2))
+  }
 }
 
 /// Creates a new parser from the output of the first parser, then apply that parser over the rest of the input.
@@ -172,13 +283,46 @@ where
 /// assert_eq!(parse.parse(&[4, 0, 1, 2][..]), Err(Err::Error((&[0, 1, 2][..], ErrorKind::Eof))));
 /// # }
 /// ```
-pub fn flat_map<I, O, E: ParseError<I>, F, G, H>(parser: F, applied_parser: G) -> FlatMap<F, G>
+pub const fn flat_map<I, O, E: ParseError<I>, F, G, H>(
+  parser: F,
+  applied_parser: G,
+) -> FlatMap<F, G>
 where
   F: Parser<I, Error = E>,
   G: FnMut(<F as Parser<I>>::Output) -> H,
   H: Parser<I, Output = O, Error = E>,
 {
-  parser.flat_map(applied_parser)
+  FlatMap {
+    parser,
+    applied_parser,
+  }
+}
+
+/// Parser implementation for [`flat_map`]
+#[derive(Clone, Copy)]
+pub struct FlatMap<F, G> {
+  parser: F,
+  applied_parser: G,
+}
+
+impl<
+    I,
+    E: ParseError<I>,
+    F: Parser<I, Error = E>,
+    G: FnMut(<F as Parser<I>>::Output) -> H,
+    H: Parser<I, Error = E>,
+  > Parser<I> for FlatMap<F, G>
+{
+  type Output = <H as Parser<I>>::Output;
+  type Error = E;
+
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    let (input, o1) = self
+      .parser
+      .process::<OutputM<Emit, OM::Error, OM::Incomplete>>(i)?;
+
+    (self.applied_parser)(o1).process::<OM>(input)
+  }
 }
 
 /// Optional parser, will return `None` on [`Err::Error`].
@@ -199,7 +343,7 @@ where
 /// assert_eq!(parser("123;"), Ok(("123;", None)));
 /// # }
 /// ```
-pub fn opt<I: Clone, E: ParseError<I>, F>(f: F) -> Opt<F>
+pub const fn opt<I: Clone, E: ParseError<I>, F>(f: F) -> Opt<F>
 where
   F: Parser<I, Error = E>,
 {
@@ -299,7 +443,7 @@ where
 /// assert_eq!(parser.parse("123;"), Err(Err::Error(("123;", ErrorKind::Alpha))));
 /// # }
 /// ```
-pub fn peek<I: Clone, F>(parser: F) -> Peek<F>
+pub const fn peek<I: Clone, F>(parser: F) -> Peek<F>
 where
   F: Parser<I>,
 {
@@ -368,7 +512,7 @@ pub fn eof<I: Input + Clone, E: ParseError<I>>(input: I) -> IResult<I, I, E> {
 /// assert_eq!(parser.parse("abcd"), Err(Err::Error(("abcd", ErrorKind::Complete))));
 /// # }
 /// ```
-pub fn complete<I: Clone, O, E: ParseError<I>, F>(parser: F) -> MakeComplete<F>
+pub const fn complete<I: Clone, O, E: ParseError<I>, F>(parser: F) -> MakeComplete<F>
 where
   F: Parser<I, Output = O, Error = E>,
 {
@@ -420,7 +564,7 @@ where
 /// assert_eq!(parser.parse("123abcd;"),Err(Err::Error(("123abcd;", ErrorKind::Alpha))));
 /// # }
 /// ```
-pub fn all_consuming<I, E: ParseError<I>, F>(parser: F) -> AllConsuming<F>
+pub const fn all_consuming<I, E: ParseError<I>, F>(parser: F) -> AllConsuming<F>
 where
   I: Input,
   F: Parser<I, Error = E>,
@@ -472,7 +616,7 @@ where
 /// assert_eq!(parser.parse("123abcd;"),Err(Err::Error(("123abcd;", ErrorKind::Alpha))));
 /// # }
 /// ```
-pub fn verify<I: Clone, O2, E: ParseError<I>, F, G>(first: F, second: G) -> Verify<F, G, O2>
+pub const fn verify<I: Clone, O2, E: ParseError<I>, F, G>(first: F, second: G) -> Verify<F, G, O2>
 where
   F: Parser<I, Error = E>,
   G: Fn(&O2) -> bool,
@@ -503,7 +647,6 @@ impl<F: Clone, G: Clone, O2: ?Sized> Clone for Verify<F, G, O2> {
   }
 }
 impl<F: Copy, G: Copy, O2: ?Sized> Copy for Verify<F, G, O2> {}
-
 
 impl<I, F: Parser<I>, G, O2> Parser<I> for Verify<F, G, O2>
 where
@@ -546,7 +689,7 @@ where
 /// assert_eq!(parser.parse("123abcd;"), Err(Err::Error(("123abcd;", ErrorKind::Alpha))));
 /// # }
 /// ```
-pub fn value<I, O1: Clone, E: ParseError<I>, F>(val: O1, parser: F) -> Value<O1, F>
+pub const fn value<I, O1: Clone, E: ParseError<I>, F>(val: O1, parser: F) -> Value<O1, F>
 where
   F: Parser<I, Error = E>,
 {
@@ -593,7 +736,7 @@ where
 /// assert_eq!(parser.parse("abcd"), Err(Err::Error(("abcd", ErrorKind::Not))));
 /// # }
 /// ```
-pub fn not<I: Clone, E: ParseError<I>, F>(parser: F) -> Not<F>
+pub const fn not<I: Clone, E: ParseError<I>, F>(parser: F) -> Not<F>
 where
   F: Parser<I, Error = E>,
 {
@@ -641,7 +784,7 @@ where
 /// assert_eq!(parser.parse("abcd;"),Err(Err::Error((";", ErrorKind::Char))));
 /// # }
 /// ```
-pub fn recognize<I: Clone + Offset + Input, E: ParseError<I>, F>(parser: F) -> Recognize<F>
+pub const fn recognize<I: Clone + Offset + Input, E: ParseError<I>, F>(parser: F) -> Recognize<F>
 where
   F: Parser<I, Error = E>,
 {
@@ -714,7 +857,7 @@ where
 /// assert_eq!(recognize_parser.parse("abcd"), consumed_parser.parse("abcd"));
 /// # }
 /// ```
-pub fn consumed<I, F, E>(parser: F) -> Consumed<F>
+pub const fn consumed<I, F, E>(parser: F) -> Consumed<F>
 where
   I: Clone + Offset + Input,
   E: ParseError<I>,
@@ -808,7 +951,7 @@ where
 /// assert_eq!(parser("+"), Err(Err::Failure(Error { input: "", code: ErrorKind::Digit })));
 /// # }
 /// ```
-pub fn cut<I, E: ParseError<I>, F>(parser: F) -> Cut<F>
+pub const fn cut<I, E: ParseError<I>, F>(parser: F) -> Cut<F>
 where
   F: Parser<I, Error = E>,
 {
@@ -865,7 +1008,7 @@ where
 /// assert_eq!(bytes, Ok(("", vec![97, 98, 99, 100])));
 /// # }
 /// ```
-pub fn into<I, O1, O2, E1, E2, F>(parser: F) -> crate::Into<F, O2, E2>
+pub const fn into<I, O1, O2, E1, E2, F>(parser: F) -> Into<F, O2, E2>
 where
   O2: From<O1>,
   E2: From<E1>,
@@ -873,7 +1016,39 @@ where
   E2: ParseError<I>,
   F: Parser<I, Output = O1, Error = E1>,
 {
-  parser.into::<O2, E2>()
+  Into {
+    f: parser,
+    phantom_out2: PhantomData,
+    phantom_err2: PhantomData,
+  }
+}
+
+/// Implementation of [`into`]
+#[derive(Clone, Copy)]
+pub struct Into<F, O2, E2> {
+  f: F,
+  phantom_out2: PhantomData<O2>,
+  phantom_err2: PhantomData<E2>,
+}
+
+impl<
+    I,
+    O2: From<<F as Parser<I>>::Output>,
+    E2: ParseError<I> + From<<F as Parser<I>>::Error>,
+    F: Parser<I>,
+  > Parser<I> for Into<F, O2, E2>
+{
+  type Output = O2;
+  type Error = E2;
+
+  fn process<OM: OutputMode>(&mut self, i: I) -> PResult<OM, I, Self::Output, Self::Error> {
+    match self.f.process::<OM>(i) {
+      Ok((i, o)) => Ok((i, OM::Output::map(o, |o| o.into()))),
+      Err(Err::Error(e)) => Err(Err::Error(OM::Error::map(e, |e| e.into()))),
+      Err(Err::Failure(e)) => Err(Err::Failure(e.into())),
+      Err(Err::Incomplete(e)) => Err(Err::Incomplete(e)),
+    }
+  }
 }
 
 /// Creates an iterator from input data and a parser.
@@ -1049,7 +1224,9 @@ pub struct Fail<O, E> {
 }
 
 impl<O, E> Clone for Fail<O, E> {
-  fn clone(&self) -> Self { *self }
+  fn clone(&self) -> Self {
+    *self
+  }
 }
 impl<O, E> Copy for Fail<O, E> {}
 

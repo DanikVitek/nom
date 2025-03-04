@@ -36,7 +36,7 @@ use crate::Input;
 /// assert_eq!(parsed.0, 0x01);
 /// assert_eq!(parsed.1, 0x23);
 /// ```
-pub fn bits<I, O, E1, E2, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E2>
+pub const fn bits<I, O, E1, E2, P>(mut parser: P) -> impl FnMut(I) -> IResult<I, O, E2>
 where
   E1: ParseError<(I, usize)> + ErrorConvert<E2>,
   E2: ParseError<I>,
@@ -82,7 +82,7 @@ where
 ///
 /// assert_eq!(parse( input ), Ok(( &[][..], (0x01, 0x23, &[0xff, 0xff][..]) )));
 /// ```
-pub fn bytes<I, O, E1, E2, P>(mut parser: P) -> impl FnMut((I, usize)) -> IResult<(I, usize), O, E2>
+pub const fn bytes<I, O, E1, E2, P>(mut parser: P) -> impl FnMut((I, usize)) -> IResult<(I, usize), O, E2>
 where
   E1: ParseError<I> + ErrorConvert<E2>,
   E2: ParseError<(I, usize)>,
