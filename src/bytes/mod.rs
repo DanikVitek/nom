@@ -917,7 +917,11 @@ where
 /// assert_eq!(esc("12\\\"34;"), Ok((";", "12\\\"34")));
 /// ```
 ///
-pub const fn escaped<I, Error, F, G>(normal: F, control_char: char, escapable: G) -> Escaped<F, G, Error>
+pub const fn escaped<I, Error, F, G>(
+  normal: F,
+  control_char: char,
+  escapable: G,
+) -> Escaped<F, G, Error>
 where
   I: Input + Offset,
   <I as Input>::Item: AsChar,
@@ -1136,7 +1140,9 @@ pub struct EscapedTransform<F, G, E, ExtendItem, Output> {
   o: PhantomData<Output>,
 }
 
-impl<F: Clone, G: Clone, E, ExtendItem, Output> Clone for EscapedTransform<F, G, E, ExtendItem, Output> {
+impl<F: Clone, G: Clone, E, ExtendItem, Output> Clone
+  for EscapedTransform<F, G, E, ExtendItem, Output>
+{
   fn clone(&self) -> Self {
     Self {
       normal: self.normal.clone(),
@@ -1148,7 +1154,10 @@ impl<F: Clone, G: Clone, E, ExtendItem, Output> Clone for EscapedTransform<F, G,
     }
   }
 }
-impl<F: Copy, G: Copy, E, ExtendItem, Output> Copy for EscapedTransform<F, G, E, ExtendItem, Output> {}
+impl<F: Copy, G: Copy, E, ExtendItem, Output> Copy
+  for EscapedTransform<F, G, E, ExtendItem, Output>
+{
+}
 
 impl<I, Error: ParseError<I>, F, G, ExtendItem, Output> Parser<I>
   for EscapedTransform<F, G, Error, ExtendItem, Output>

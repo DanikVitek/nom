@@ -50,7 +50,9 @@ where
 /// assert_eq!(parser("cd"), Err(Err::Error(Error::new("cd", ErrorKind::Satisfy))));
 /// assert_eq!(parser(""), Err(Err::Incomplete(Needed::Unknown)));
 /// ```
-pub const fn satisfy<F, I, Error: ParseError<I>>(cond: F) -> impl FnMut(I) -> IResult<I, char, Error>
+pub const fn satisfy<F, I, Error: ParseError<I>>(
+  cond: F,
+) -> impl FnMut(I) -> IResult<I, char, Error>
 where
   I: Input,
   <I as Input>::Item: AsChar,
@@ -94,7 +96,9 @@ where
 /// assert_eq!(none_of::<_, _, (_, ErrorKind)>("ab")("a"), Err(Err::Error(("a", ErrorKind::NoneOf))));
 /// assert_eq!(none_of::<_, _, (_, ErrorKind)>("a")(""), Err(Err::Incomplete(Needed::Unknown)));
 /// ```
-pub const fn none_of<I, T, Error: ParseError<I>>(list: T) -> impl FnMut(I) -> IResult<I, char, Error>
+pub const fn none_of<I, T, Error: ParseError<I>>(
+  list: T,
+) -> impl FnMut(I) -> IResult<I, char, Error>
 where
   I: Input,
   <I as Input>::Item: AsChar,

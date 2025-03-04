@@ -229,10 +229,12 @@ where
   }
 }
 
+use crate::combinator::{
+  flat_map, map, map_opt, map_parser, map_res, AndThen, FlatMap, Map, MapOpt, MapRes,
+};
+use crate::sequence::{or, pair, And, Or};
 #[cfg(feature = "std")]
 use std::error::Error;
-use crate::combinator::{flat_map, map, map_opt, map_parser, map_res, AndThen, FlatMap, Map, MapOpt, MapRes};
-use crate::sequence::{or, pair, And, Or};
 
 #[cfg(feature = "std")]
 impl<E> Error for Err<E>

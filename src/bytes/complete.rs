@@ -56,7 +56,9 @@ where
 /// assert_eq!(parser("Something"), Err(Err::Error(Error::new("Something", ErrorKind::Tag))));
 /// assert_eq!(parser(""), Err(Err::Error(Error::new("", ErrorKind::Tag))));
 /// ```
-pub const fn tag_no_case<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
+pub const fn tag_no_case<T, I, Error: ParseError<I>>(
+  tag: T,
+) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + Compare<T>,
   T: Input,
@@ -148,7 +150,9 @@ where
 /// assert_eq!(alpha(b"latin"), Ok((&b""[..], &b"latin"[..])));
 /// assert_eq!(alpha(b""), Ok((&b""[..], &b""[..])));
 /// ```
-pub const fn take_while<F, I, Error: ParseError<I>>(cond: F) -> impl FnMut(I) -> IResult<I, I, Error>
+pub const fn take_while<F, I, Error: ParseError<I>>(
+  cond: F,
+) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -178,7 +182,9 @@ where
 /// assert_eq!(alpha(b"latin"), Ok((&b""[..], &b"latin"[..])));
 /// assert_eq!(alpha(b"12345"), Err(Err::Error(Error::new(&b"12345"[..], ErrorKind::TakeWhile1))));
 /// ```
-pub const fn take_while1<F, I, Error: ParseError<I>>(cond: F) -> impl FnMut(I) -> IResult<I, I, Error>
+pub const fn take_while1<F, I, Error: ParseError<I>>(
+  cond: F,
+) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -273,7 +279,9 @@ where
 /// assert_eq!(till_colon("12345"), Ok(("", "12345")));
 /// assert_eq!(till_colon(""), Err(Err::Error(Error::new("", ErrorKind::TakeTill1))));
 /// ```
-pub const fn take_till1<F, I, Error: ParseError<I>>(cond: F) -> impl FnMut(I) -> IResult<I, I, Error>
+pub const fn take_till1<F, I, Error: ParseError<I>>(
+  cond: F,
+) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input,
   F: Fn(<I as Input>::Item) -> bool,
@@ -370,7 +378,9 @@ where
 /// assert_eq!(until_eof("1eof2eof"), Ok(("eof2eof", "1")));
 /// assert_eq!(until_eof("eof"), Err(Err::Error(Error::new("eof", ErrorKind::TakeUntil))));
 /// ```
-pub const fn take_until1<T, I, Error: ParseError<I>>(tag: T) -> impl FnMut(I) -> IResult<I, I, Error>
+pub const fn take_until1<T, I, Error: ParseError<I>>(
+  tag: T,
+) -> impl FnMut(I) -> IResult<I, I, Error>
 where
   I: Input + FindSubstring<T>,
   T: Input,

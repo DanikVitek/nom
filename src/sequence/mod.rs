@@ -5,7 +5,7 @@ mod tests;
 
 use crate::error::ParseError;
 use crate::internal::{IResult, Parser};
-use crate::{Check, Mode, OutputM, OutputMode, PResult, Err};
+use crate::{Check, Err, Mode, OutputM, OutputMode, PResult};
 
 /// Gets an object from the first parser,
 /// then gets another object from the second parser.
@@ -83,7 +83,7 @@ where
   F: Parser<I, Output = O1, Error = E>,
   G: Parser<I, Output = O2, Error = E>,
 {
-  Or{ first, second }
+  Or { first, second }
 }
 
 /// Parser implementation for [`or`]
@@ -94,12 +94,12 @@ pub struct Or<F, G> {
 }
 
 impl<
-  I: Clone,
-  O,
-  E: ParseError<I>,
-  F: Parser<I, Output = O, Error = E>,
-  G: Parser<I, Output = O, Error = E>,
-> Parser<I> for Or<F, G>
+    I: Clone,
+    O,
+    E: ParseError<I>,
+    F: Parser<I, Output = O, Error = E>,
+    G: Parser<I, Output = O, Error = E>,
+  > Parser<I> for Or<F, G>
 {
   type Output = <F as Parser<I>>::Output;
   type Error = <F as Parser<I>>::Error;

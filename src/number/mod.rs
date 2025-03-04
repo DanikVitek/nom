@@ -5,6 +5,8 @@ use core::{
   ops::{Add, BitAnd, BitOrAssign, Not, Shl},
 };
 
+use crate::combinator::Map;
+use crate::sequence::And;
 use crate::{
   branch::{alt, Choice},
   bytes::streaming::tag_no_case,
@@ -15,8 +17,6 @@ use crate::{
   AsBytes, AsChar, Compare, Either, Emit, Err, FloatBits, HasUintCounterpart, IResult, Input,
   IsStreaming, Mode, Needed, Offset, OutputM, OutputMode, PResult, Parser,
 };
-use crate::combinator::Map;
-use crate::sequence::And;
 
 pub mod complete;
 pub mod streaming;
@@ -166,10 +166,7 @@ where
   type Error = E;
 
   #[inline(always)]
-  fn process<OM: OutputMode>(
-    &mut self,
-    input: I,
-  ) -> PResult<OM, I, Self::Output, Self::Error> {
+  fn process<OM: OutputMode>(&mut self, input: I) -> PResult<OM, I, Self::Output, Self::Error> {
     if input.input_len() < self.bound {
       if OM::Incomplete::is_streaming() {
         Err(Err::Incomplete(Needed::new(self.bound - input.input_len())))
@@ -1075,7 +1072,9 @@ where
 /// assert_eq!(le_u128(&b"\x01"[..]), Err(Err::Incomplete(Needed::new(15))));
 /// ```
 #[inline]
-pub const fn u128<I, E: ParseError<I>>(endian: Endianness) -> Either<BeUint<u128, E>, LeUint<u128, E>>
+pub const fn u128<I, E: ParseError<I>>(
+  endian: Endianness,
+) -> Either<BeUint<u128, E>, LeUint<u128, E>>
 where
   I: Input<Item = u8>,
 {
@@ -1479,7 +1478,9 @@ where
 /// assert_eq!(le_f32(&b"abc"[..]), Err(Err::Incomplete(Needed::new(1))));
 /// ```
 #[inline]
-pub const fn f32<I, E: ParseError<I>>(endian: Endianness) -> Either<BeFloat<u32, E>, LeFloat<u32, E>>
+pub const fn f32<I, E: ParseError<I>>(
+  endian: Endianness,
+) -> Either<BeFloat<u32, E>, LeFloat<u32, E>>
 where
   I: Input<Item = u8>,
 {
@@ -1518,7 +1519,9 @@ where
 /// assert_eq!(le_f64(&b"abc"[..]), Err(Err::Incomplete(Needed::new(5))));
 /// ```
 #[inline]
-pub const fn f64<I, E: ParseError<I>>(endian: Endianness) -> Either<BeFloat<u64, E>, LeFloat<u64, E>>
+pub const fn f64<I, E: ParseError<I>>(
+  endian: Endianness,
+) -> Either<BeFloat<u64, E>, LeFloat<u64, E>>
 where
   I: Input<Item = u8>,
 {

@@ -1096,7 +1096,9 @@ where
 /// assert_eq!(le_f32(&b"abc"[..]), Err(Err::Incomplete(Needed::new(1))));
 /// ```
 #[inline]
-pub const fn f32<I, E: ParseError<I>>(endian: crate::number::Endianness) -> fn(I) -> IResult<I, f32, E>
+pub const fn f32<I, E: ParseError<I>>(
+  endian: crate::number::Endianness,
+) -> fn(I) -> IResult<I, f32, E>
 where
   I: Input<Item = u8>,
 {
@@ -1135,7 +1137,9 @@ where
 /// assert_eq!(le_f64(&b"abc"[..]), Err(Err::Incomplete(Needed::new(5))));
 /// ```
 #[inline]
-pub const fn f64<I, E: ParseError<I>>(endian: crate::number::Endianness) -> fn(I) -> IResult<I, f64, E>
+pub const fn f64<I, E: ParseError<I>>(
+  endian: crate::number::Endianness,
+) -> fn(I) -> IResult<I, f64, E>
 where
   I: Input<Item = u8>,
 {

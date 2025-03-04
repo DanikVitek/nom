@@ -1417,10 +1417,7 @@ where
   let (i, s) = recognize_float_or_exceptions(input)?;
   match s.parse_to() {
     Some(f) => Ok((i, f)),
-    None => Err(Err::Error(E::from_error_kind(
-      i,
-      ErrorKind::Float,
-    ))),
+    None => Err(Err::Error(E::from_error_kind(i, ErrorKind::Float))),
   }
 }
 
@@ -1467,10 +1464,7 @@ where
   let (i, s) = recognize_float_or_exceptions(input)?;
   match s.parse_to() {
     Some(f) => Ok((i, f)),
-    None => Err(Err::Error(E::from_error_kind(
-      i,
-      ErrorKind::Float,
-    ))),
+    None => Err(Err::Error(E::from_error_kind(i, ErrorKind::Float))),
   }
 }
 

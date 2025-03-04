@@ -82,7 +82,9 @@ where
 ///
 /// assert_eq!(parse( input ), Ok(( &[][..], (0x01, 0x23, &[0xff, 0xff][..]) )));
 /// ```
-pub const fn bytes<I, O, E1, E2, P>(mut parser: P) -> impl FnMut((I, usize)) -> IResult<(I, usize), O, E2>
+pub const fn bytes<I, O, E1, E2, P>(
+  mut parser: P,
+) -> impl FnMut((I, usize)) -> IResult<(I, usize), O, E2>
 where
   E1: ParseError<I> + ErrorConvert<E2>,
   E2: ParseError<(I, usize)>,
